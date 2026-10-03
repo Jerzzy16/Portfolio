@@ -81,18 +81,6 @@ export default function Hero() {
           {person.intro}
         </p>
 
-        <div
-          className="rise mt-9 flex flex-wrap items-center justify-center gap-3"
-          style={{ animationDelay: '210ms' } as CSSVars}
-        >
-          <a href="#projects" className="action action-primary">
-            Projects
-          </a>
-          <a href="#contact" className="action action-ghost">
-            Contact
-          </a>
-        </div>
-
         <div className="rise mt-14 md:mt-20" style={{ animationDelay: '280ms' } as CSSVars}>
           <SchemaDiagram roll={roll} />
         </div>
