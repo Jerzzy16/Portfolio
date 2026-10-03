@@ -67,7 +67,8 @@
     border-color: var(--color-ink-line);
   }
 
-  html {
+html {
+    color-scheme: dark;
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
   }
@@ -79,7 +80,34 @@
     font-feature-settings: 'calt';
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden;
+  }
+
+  /* Wrapping. Headlines balance so a two-line h1 splits evenly instead of
+     leaving one word stranded; body copy uses pretty to kill orphans. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+
+  p,
+  li {
+    text-wrap: pretty;
+  }
+
+  /* Interactive elements: kill the 300ms double-tap-zoom delay and set the tap
+     flash deliberately, tinted to the active accent rather than left at the
+     platform default grey. */
+  a,
+  button,
+  summary,
+  input,
+  select,
+  textarea,
+  [role='button'] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(var(--color-primary-rgb), 0.18);
   }
 
   ::selection {
@@ -105,18 +133,33 @@
 }
 
 @layer components {
-  /* Layout container. 1200px per DESIGN.md grid. */
+/* Layout container. 1200px per DESIGN.md grid.
+     Horizontal padding never drops below the page gutter, but grows past it on
+     a notched device so full-bleed rows stay clear of the sensor housing. */
   .container-page {
     width: 100%;
     max-width: 1200px;
     margin-inline: auto;
-    padding-inline: 1.25rem;
+    padding-left: max(1.25rem, env(safe-area-inset-left));
+    padding-right: max(1.25rem, env(safe-area-inset-right));
   }
 
   @media (min-width: 768px) {
     .container-page {
-      padding-inline: 2rem;
+      padding-left: max(2rem, env(safe-area-inset-left));
+      padding-right: max(2rem, env(safe-area-inset-right));
     }
+  }
+
+  /* Mobile nav drawer. Owns its own insets because it is fixed to the viewport,
+     not to the page container, and it is a scroll container in its own right so
+     it must not chain a swipe through to the page behind it. */
+  .drawer {
+    padding-top: max(5rem, calc(env(safe-area-inset-top) + 3.5rem));
+    padding-bottom: max(2.5rem, calc(env(safe-area-inset-bottom) + 1.5rem));
+    padding-left: max(1.25rem, env(safe-area-inset-left));
+    padding-right: max(1.25rem, env(safe-area-inset-right));
+    overscroll-behavior: contain;
   }
 
   /* Blueprint data panel. Sharp by rule, hairline by rule. */
@@ -230,10 +273,27 @@
     overflow: visible;
   }
 
-  .diagram-note {
+.diagram-note {
     margin-top: 1.25rem;
     font-family: var(--font-mono);
-    font-size: 0.625rem;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    color: var(--color-mute);
+  }
+
+  @media (min-width: 768px) {
+    .diagram-note {
+      font-size: 0.625rem;
+    }
+  }
+
+  /* Mobile-only edge caption. Carries the cardinality the connectors show on
+     desktop, so re-flowing the diagram does not drop the relationship. */
+  .diagram-edge {
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid var(--color-ink-line);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
     color: var(--color-mute);
   }
 
@@ -280,9 +340,8 @@
     opacity: 1;
   }
 
-  /* Card chrome. Sharp by the documented radius rule. */
+/* Card chrome. Sharp by the documented radius rule. */
   .card.blueprint {
-    position: absolute;
     border: 1px solid var(--color-ink-line);
     border-radius: var(--radius-panel);
     background-color: var(--color-ink-deep);
@@ -290,12 +349,26 @@
     animation: rise 620ms var(--ease-out-expo) forwards;
   }
 
+  /* Desktop: taken from an authored slot inside the scaled stage. */
+  .card.slot {
+    position: absolute;
+  }
+
+  /* Mobile: natural flow at full size. The stage cannot simply be scaled down,
+     because at a 375px viewport the scale factor lands near 0.29 and every
+     label in the diagram drops to roughly 4px. */
+  .card.flow {
+    position: relative;
+    display: block;
+    width: 100%;
+  }
+
   .hoverable {
     transition: border-color 200ms var(--ease-out-ui), transform 160ms var(--ease-out-ui);
   }
 
   .hoverable:hover {
-    border-color: rgb(var(--color-primary-rgb) / 0.6);
+    border-color: rgba(var(--color-primary-rgb), 0.6);
   }
 
   .hoverable:active {
@@ -343,7 +416,7 @@
   }
 
   .tag-accent {
-    border-color: rgb(var(--color-primary-rgb) / 0.35);
+    border-color: rgba(var(--color-primary-rgb), 0.35);
     color: var(--color-primary);
   }
 

@@ -99,19 +99,34 @@ function lerpColor(base: RGBA, active: RGBA, t: number): string {
  * Reads the accent as "r, g, b" off the document at paint time rather than
  * closing over a value. That is what lets the per-load palette rotation in
  * src/lib/palette.ts recolour the canvas without re-rendering this component.
+ *
+ * Memoised on the property name. This used to run inside every frame, and a
+ * getComputedStyle call there forces a style recalc 60 times a second for a
+ * value that is written once per page load.
  */
+let accentCache: { name: string; accent: Accent } | null = null;
+
 function readAccent(name: string, fallback: Accent): Accent {
+  if (accentCache?.name === name) return accentCache.accent;
+
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const parts = raw.split(',').map((n) => Number.parseFloat(n));
-  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return fallback;
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
+    accentCache = { name, accent: fallback };
+    return fallback;
+  }
+
   const [r, g, b] = parts;
   const rgb = `${r}, ${g}, ${b}`;
-  return {
+  const accent: Accent = {
     line: { r, g, b, a: 0.55 },
     node: { r, g, b, a: 1 },
     glow: rgb,
     ripple: rgb,
   };
+
+  accentCache = { name, accent };
+  return accent;
 }
 
 /** Static neutral fallback, only used if the custom property is missing. */
@@ -144,13 +159,35 @@ export default function KineticGrid({
   const sizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
   const lastMoveRef = useRef(0);
 
+  /*
+    Per-frame scratch. The canvas rect is refreshed once per frame rather than
+    per pointer event, and the grid point buffers survive across frames.
+   */
+  const gridRef = useRef<{
+    cols: number;
+    rows: number;
+    xs: Float64Array;
+    ys: Float64Array;
+    prox: Float64Array;
+  } | null>(null);
+  const rectRef = useRef<DOMRect | null>(null);
+
   /** Warp scales with the grid pitch so a tight band behaves like a wide one. */
   const maxWarp = cellSize * (MAX_WARP / CELL_SIZE);
 
   // ── Warp ────────────────────────────────────────────────────────────────────
 
-  const getWarpedPoint = useCallback(
+  /*
+    Writes the warped position for one grid point straight into the frame
+    buffers and returns its proximity. This used to allocate a `{ pt, proximity }`
+    object per point per frame, which at a 54px pitch over a full hero is
+    several hundred objects a frame for values that are immediately consumed.
+   */
+  const warpInto = useCallback(
     (
+      xs: Float64Array,
+      ys: Float64Array,
+      i: number,
       gx: number,
       gy: number,
       col: number,
@@ -159,7 +196,7 @@ export default function KineticGrid({
       ripples: Ripple[],
       cols: number,
       rows: number,
-    ): { pt: Point; proximity: number } => {
+    ): number => {
       // Edge pin. Smoothly locks boundary rows and columns in place.
       const edgeMargin = 1.5;
       const colPin = Math.min(col / edgeMargin, (cols - 1 - col) / edgeMargin, 1);
@@ -194,16 +231,14 @@ export default function KineticGrid({
         const eased = t < 0.01 ? 0 : (1 - t) * (1 - t) * Math.min(1, dist / 60);
         const warpAmt = eased * maxWarp * pinFactor;
         const angle = Math.atan2(dy, dx);
-        return {
-          pt: {
-            x: gx - Math.cos(angle) * warpAmt + rx,
-            y: gy - Math.sin(angle) * warpAmt + ry,
-          },
-          proximity,
-        };
+        xs[i] = gx - Math.cos(angle) * warpAmt + rx;
+        ys[i] = gy - Math.sin(angle) * warpAmt + ry;
+        return proximity;
       }
 
-      return { pt: { x: gx + rx, y: gy + ry }, proximity };
+      xs[i] = gx + rx;
+      ys[i] = gy + ry;
+      return proximity;
     },
     [influenceRadius, maxWarp],
   );
@@ -256,17 +291,27 @@ export default function KineticGrid({
       const rows = Math.max(2, Math.ceil(H / cellSize)) + 1;
       const cellW = W / (cols - 1);
       const cellH = H / (rows - 1);
+      const total = cols * rows;
 
-      const pts: Point[][] = [];
-      const prox: number[][] = [];
+      // Buffers are kept across frames and only reallocated when the grid
+      // dimensions change, so a steady-state frame allocates nothing.
+      let buf = gridRef.current;
+      if (!buf || buf.cols !== cols || buf.rows !== rows) {
+        buf = { cols, rows, xs: new Float64Array(total), ys: new Float64Array(total), prox: new Float64Array(total) };
+        gridRef.current = buf;
+      }
+      const { xs, ys, prox } = buf;
 
       for (let row = 0; row < rows; row++) {
-        pts[row] = [];
-        prox[row] = [];
+        const gy = row * cellH;
+        const base = row * cols;
         for (let col = 0; col < cols; col++) {
-          const { pt, proximity } = getWarpedPoint(
+          prox[base + col] = warpInto(
+            xs,
+            ys,
+            base + col,
             col * cellW,
-            row * cellH,
+            gy,
             col,
             row,
             mouse,
@@ -274,17 +319,15 @@ export default function KineticGrid({
             cols,
             rows,
           );
-          pts[row][col] = pt;
-          prox[row][col] = proximity;
         }
       }
 
-      const drawSeg = (p1: Point, p2: Point, pr1: number, pr2: number) => {
-        const avg = (pr1 + pr2) / 2;
+      const drawSeg = (i1: number, i2: number) => {
+        const avg = (prox[i1] + prox[i2]) / 2;
         const t = smoothstep(avg);
         ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
+        ctx.moveTo(xs[i1], ys[i1]);
+        ctx.lineTo(xs[i2], ys[i2]);
         ctx.strokeStyle = lerpColor(LINE_BASE, theme.line, t);
         ctx.lineWidth = lerpN(0.8, 1.5, t);
         ctx.stroke();
@@ -292,36 +335,39 @@ export default function KineticGrid({
 
       ctx.lineCap = 'butt';
 
-      for (let row = 0; row < rows; row++)
-        for (let col = 0; col < cols - 1; col++)
-          drawSeg(pts[row][col], pts[row][col + 1], prox[row][col], prox[row][col + 1]);
-
-      for (let col = 0; col < cols; col++)
-        for (let row = 0; row < rows - 1; row++)
-          drawSeg(pts[row][col], pts[row + 1][col], prox[row][col], prox[row + 1][col]);
-
       for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          const p = pts[row][col];
-          const t = smoothstep(prox[row][col]);
-          const r = lerpN(NODE_BASE_RADIUS, NODE_ACTIVE_RADIUS, t);
+        const base = row * cols;
+        for (let col = 0; col < cols - 1; col++) drawSeg(base + col, base + col + 1);
+      }
 
-          if (t > 0.3) {
-            const glowR = r + lerpN(0, 6, (t - 0.3) / 0.7);
-            const grd = ctx.createRadialGradient(p.x, p.y, r * 0.5, p.x, p.y, glowR);
-            grd.addColorStop(0, `rgba(${theme.glow},${(t * 0.3).toFixed(3)})`);
-            grd.addColorStop(1, `rgba(${theme.glow},0)`);
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
-            ctx.fillStyle = grd;
-            ctx.fill();
-          }
+      for (let col = 0; col < cols; col++) {
+        for (let row = 0; row < rows - 1; row++) {
+          const i = row * cols + col;
+          drawSeg(i, i + cols);
+        }
+      }
 
+      for (let i = 0; i < total; i++) {
+        const px = xs[i];
+        const py = ys[i];
+        const t = smoothstep(prox[i]);
+        const r = lerpN(NODE_BASE_RADIUS, NODE_ACTIVE_RADIUS, t);
+
+        if (t > 0.3) {
+          const glowR = r + lerpN(0, 6, (t - 0.3) / 0.7);
+          const grd = ctx.createRadialGradient(px, py, r * 0.5, px, py, glowR);
+          grd.addColorStop(0, `rgba(${theme.glow},${(t * 0.3).toFixed(3)})`);
+          grd.addColorStop(1, `rgba(${theme.glow},0)`);
           ctx.beginPath();
-          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-          ctx.fillStyle = lerpColor(NODE_BASE, theme.node, t);
+          ctx.arc(px, py, glowR, 0, Math.PI * 2);
+          ctx.fillStyle = grd;
           ctx.fill();
         }
+
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fillStyle = lerpColor(NODE_BASE, theme.node, t);
+        ctx.fill();
       }
 
       for (const r of ripples) {
@@ -332,7 +378,7 @@ export default function KineticGrid({
         ctx.stroke();
       }
     },
-    [accentVar, background, cellSize, getWarpedPoint, showDots],
+    [accentVar, background, cellSize, showDots, warpInto],
   );
 
   // ── Loop ────────────────────────────────────────────────────────────────────
@@ -359,17 +405,24 @@ export default function KineticGrid({
       const w = Math.max(1, Math.round(rect.width));
       const h = Math.max(1, Math.round(rect.height));
       // Cap at 2x. A 3x phone backing store triples fill cost for no visible gain.
-const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
 
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
       sizeRef.current = { w, h };
+      rectRef.current = canvas.getBoundingClientRect();
     };
 
+    /*
+      Reads the cached rect rather than measuring. Pointer events fire well
+      above frame rate, and a getBoundingClientRect per event is a forced layout
+      on every mouse move. The rect only changes on scroll, resize or layout, so
+      it is refreshed once per frame instead.
+     */
     const localPoint = (event: MouseEvent): Point => {
-      const rect = canvas.getBoundingClientRect();
+      const rect = rectRef.current ?? canvas.getBoundingClientRect();
       return { x: event.clientX - rect.left, y: event.clientY - rect.top };
     };
 
@@ -378,6 +431,8 @@ const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
     let onScreen = true;
 
     const tick = (now: number) => {
+      rectRef.current = canvas.getBoundingClientRect();
+
       const m = mouseRef.current;
       const t = targetMouseRef.current;
       m.x = lerpN(m.x, t.x, LERP_SPEED);
@@ -442,7 +497,7 @@ const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
 
     const onClick = (event: MouseEvent) => {
       if (reduceMotion.matches) return;
-      const rect = canvas.getBoundingClientRect();
+      const rect = rectRef.current ?? canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
       // The field can be a band rather than the whole page, so ignore clicks

@@ -3,12 +3,20 @@ import Reveal from '@/components/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 
 /**
- * Tabular, per the reference. Columns collapse to a 4 track stack on narrow
- * screens and open to 12 from md up, so the row keeps its four fields at any
- * width instead of overflowing.
+ * A real table, because this is tabular data with a header row and repeating
+ * records. It reads as a grid visually but the semantics are genuine: a caption
+ * for the table, a header row of column headers, and cells that belong to the
+ * row they sit in.
  *
- * Only a rule above the header and between rows. A hairline under every cell
- * would turn this into a ruled spec sheet.
+ * The responsive behaviour comes from which row holds the notes, not from
+ * stripping the table down to divs:
+ *
+ *   md+   notes live in the fourth column of the row
+ *   below notes get their own full-width row, so they are never squeezed into
+ *         a 4-track column that is too narrow to read
+ *
+ * Exactly one of those two is displayed at any width, so the notes are never
+ * announced twice.
  */
 export default function Experience() {
   return (
@@ -19,32 +27,80 @@ export default function Experience() {
         </Reveal>
 
         <div className="border-t border-ink-line">
-          <div className="grid grid-cols-4 gap-x-4 py-3 md:grid-cols-12 md:gap-x-6">
-            <span className="tech-label">Role</span>
-            <span className="tech-label">Company</span>
-            <span className="tech-label">Period</span>
-            <span className="tech-label md:col-span-6">Notes</span>
-          </div>
+          <table className="w-full table-fixed border-collapse text-left">
+            <caption className="sr-only">
+              Experience by role, company, period and notes
+            </caption>
+            <thead>
+              <tr>
+                <th
+                  scope="col"
+                  className="tech-label w-1/4 py-3 font-normal md:w-3/12 md:pr-6"
+                >
+                  Role
+                </th>
+                <th scope="col" className="tech-label w-1/4 py-3 font-normal md:w-2/12 md:pr-6">
+                  Company
+                </th>
+                <th
+                  scope="col"
+                  className="tech-label w-1/4 py-3 font-normal tabular-nums md:w-2/12 md:pr-6"
+                >
+                  Period
+                </th>
+                <th scope="col" className="tech-label hidden py-3 font-normal md:table-cell md:w-6/12">
+                  Notes
+                </th>
+              </tr>
+            </thead>
 
-          {experience.map((item, index) => (
-            <Reveal
-              key={`${item.company}-${item.period}`}
-              delay={index * 0.05}
-              className="grid grid-cols-4 gap-x-4 gap-y-2 border-t border-ink-line py-5 transition-colors duration-200 hover:bg-ink-deep md:grid-cols-12 md:gap-x-6"
-            >
-              <span className="text-sm font-semibold text-canvas-soft">{item.role}</span>
-              <span className="font-mono text-xs text-primary">{item.company}</span>
-              <span className="font-mono text-[11px] text-mute">{item.period}</span>
+            <tbody>
+              {experience.map((item, index) => (
+                <Reveal
+                  key={`${item.company}-${item.period}`}
+                  as="tr"
+                  delay={index * 0.05}
+                  className="border-t border-ink-line"
+                >
+                  <td className="pt-5 pr-4 align-top text-sm font-semibold text-canvas-soft md:py-5 md:pr-6">
+                    {item.role}
+                  </td>
+                  <td className="pt-5 pr-4 align-top font-mono text-xs text-primary md:py-5 md:pr-6">
+                    {item.company}
+                  </td>
+                  <td className="pt-5 align-top font-mono text-[11px] whitespace-nowrap tabular-nums text-mute md:py-5">
+                    {item.period}
+                  </td>
+                  <td className="hidden pb-5 align-top pt-5 md:table-cell">
+                    <ul className="flex flex-col gap-1.5">
+                      {item.notes.map((note) => (
+                        <li key={note} className="text-sm leading-relaxed text-body">
+                          {note}
+                        </li>
+                      ))}
+                    </ul>
+                  </td>
+                </Reveal>
+              ))}
 
-              <ul className="col-span-4 flex flex-col gap-1.5 md:col-span-6 md:col-start-7">
-                {item.notes.map((note) => (
-                  <li key={note} className="text-sm leading-relaxed text-body">
-                    {note}
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-          ))}
+              {/* Mobile-only notes row, tucked directly under its entry so the
+                  two read as one record. No rule above it: the entry row
+                  already carries the divider. */}
+              {experience.map((item) => (
+                <tr key={`notes-${item.company}-${item.period}`} className="md:hidden">
+                  <td colSpan={4} className="pb-5">
+                    <ul className="flex flex-col gap-1.5">
+                      {item.notes.map((note) => (
+                        <li key={note} className="text-sm leading-relaxed text-body">
+                          {note}
+                        </li>
+                      ))}
+                    </ul>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>

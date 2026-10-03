@@ -1,7 +1,8 @@
 import { nav, person } from '@/data/profile';
 
 export default function Footer() {
-  const year = new Date().getFullYear();
+  // Localised, so a reader in another locale does not get an unfamiliar order.
+  const year = new Intl.DateTimeFormat(undefined, { year: 'numeric' }).format(new Date());
 
   return (
     <footer className="relative border-t border-ink-line py-12">
@@ -27,23 +28,27 @@ export default function Footer() {
           ))}
         </nav>
 
-        <div className="flex flex-col gap-3">
-          <a
-            href={`mailto:${person.links.email}`}
-            className="font-mono text-xs tracking-[0.06em] text-body transition-colors duration-200 hover:text-primary"
-          >
-            {person.links.email}
-          </a>
-          <a
-            href={person.links.linkedin}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="font-mono text-xs tracking-[0.06em] text-mute transition-colors duration-200 hover:text-primary"
-          >
-            LINKEDIN
-          </a>
-          <span className="font-mono text-xs tracking-[0.06em] text-mute">{person.location}</span>
-        </div>
+<div className="flex flex-col gap-3">
+            <a
+              href={`mailto:${person.links.email}`}
+              translate="no"
+              className="font-mono text-xs tracking-[0.06em] break-all text-body transition-colors duration-200 hover:text-primary"
+            >
+              {person.links.email}
+            </a>
+            <a
+              href={person.links.linkedin}
+              target="_blank"
+              rel="noreferrer noopener"
+              translate="no"
+              className="font-mono text-xs tracking-[0.06em] text-mute transition-colors duration-200 hover:text-primary"
+            >
+              LINKEDIN
+            </a>
+            <span className="font-mono text-xs tracking-[0.06em] text-mute">
+              {person.location}
+            </span>
+          </div>
       </div>
 
       <div className="container-page mt-12 border-t border-ink-line pt-6">

@@ -24,15 +24,17 @@ export default function Education() {
                 index === 0 ? 'md:col-span-7' : 'md:col-span-5'
               }`}
             >
-              <span className="tech-label">{item.period}</span>
+              <span className="tech-label tabular-nums">{item.period}</span>
 
-              <h3 className="mt-3 font-display text-lg font-extrabold tracking-tight text-canvas-soft">
+              <h3 className="mt-3 font-display text-lg font-extrabold tracking-tight break-words text-canvas-soft">
                 {item.degree}
               </h3>
 
-              <p className="mt-1 font-mono text-xs text-primary">{item.school}</p>
+              <p className="mt-1 font-mono text-xs break-words text-primary">{item.school}</p>
 
-              <p className="mt-4 max-w-[52ch] text-sm leading-relaxed text-body">{item.detail}</p>
+              <p className="mt-4 max-w-[52ch] text-sm leading-relaxed break-words text-body">
+                {item.detail}
+              </p>
             </Reveal>
           ))}
         </div>

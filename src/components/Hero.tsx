@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
-import { person, schemaLabel } from '@/data/profile';
+import type { CSSVars } from '@/components/Reveal';
 import SchemaDiagram from '@/components/SchemaDiagram';
 import KineticGrid from '@/components/ui/kinetic-grid';
+import { person, schemaLabel } from '@/data/profile';
 import type { Roll } from '@/schema';
-import type { CSSVars } from '@/components/Reveal';
 
 const ROLLS: readonly Roll[] = [0, 1, 2, 3];
 
@@ -27,7 +27,7 @@ function VectorField() {
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(to bottom, rgb(var(--color-primary-rgb) / 0.14) 0%, rgb(var(--color-primary-rgb) / 0.05) 45%, transparent 88%)',
+            'linear-gradient(to bottom, rgba(var(--color-primary-rgb), 0.14) 0%, rgba(var(--color-primary-rgb), 0.05) 45%, transparent 88%)',
         }}
       />
       <div
@@ -49,13 +49,14 @@ export default function Hero() {
   const [roll] = useState<Roll>(() => ROLLS[Math.floor(Math.random() * ROLLS.length)]);
 
   return (
-    <section id="top" className="relative isolate pt-32 pb-16 md:pt-24 md:pb-24">
+    <section id="top" className="relative isolate pt-32 pb-12">
       <VectorField />
 
       <div className="container-page relative z-10">
         {/* Eyebrow. The only one on the page. Hidden on mobile, where the
             header already carries the schema label directly above this. */}
         <p
+          translate="no"
           className="rise tech-label hidden text-center md:block"
           style={{ animationDelay: '0ms' } as CSSVars}
         >

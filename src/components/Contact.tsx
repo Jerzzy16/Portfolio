@@ -22,7 +22,7 @@ export default function Contact() {
 
             <div className="mt-10 flex flex-wrap gap-3">
               <a href={`mailto:${person.links.email}`} className="action action-primary">
-                <EnvelopeSimple size={16} weight="bold" />
+                <EnvelopeSimple size={16} weight="bold" aria-hidden="true" />
                 Contact
               </a>
               <a
@@ -32,7 +32,7 @@ export default function Contact() {
                 className="action action-ghost"
               >
                 GitHub
-                <ArrowRight size={16} weight="bold" />
+                <ArrowRight size={16} weight="bold" aria-hidden="true" />
               </a>
             </div>
           </div>

@@ -215,6 +215,21 @@ export function pickTheme(): Theme {
   return THEMES[Math.floor(Math.random() * THEMES.length)];
 }
 
+/**
+ * The accent hex of the theme currently painted on the document.
+ *
+ * Read by anything that needs the accent as a concrete value rather than a CSS
+ * token, such as the Simple Icons CDN URL in Skills.tsx, which takes a hex in
+ * the path and cannot read a custom property. Set by applyTheme, which runs
+ * before the first render, so a component can read it during render without a
+ * DOM measurement.
+ */
+let activeAccent = DEFAULT_THEME.accentInk;
+
+export function getActiveAccent(): string {
+  return activeAccent;
+}
+
 /** Paints the active theme onto the document so every token follows. */
 export function applyTheme(theme: Theme): void {
   const root = document.documentElement;
@@ -232,6 +247,11 @@ export function applyTheme(theme: Theme): void {
 
   set('--color-primary', theme.accentInk);
   set('--color-primary-base', theme.accentBase);
+  // Comma separated on purpose. A slash-alpha custom property only works with a
+  // space separated triplet: `rgb(var(--token) / 0.2)` against a comma separated
+  // token expands to `rgb(0, 172, 206 / 0.2)`, which is invalid, so the browser
+  // discards the whole declaration and the effect silently disappears. With this
+  // token, alpha goes through the legacy form: `rgba(var(--token), 0.2)`.
   set('--color-primary-rgb', rgbToString(hexToRgb(theme.accentInk)));
   set('--color-primary-base-rgb', rgbToString(hexToRgb(theme.accentBase)));
 
@@ -241,6 +261,13 @@ export function applyTheme(theme: Theme): void {
   set('--color-primary-active', hsl(h, s, Math.min(1, rgbToHsl(hexToRgb(theme.accentInk)).l + 0.09)));
 
   root.dataset.theme = theme.id;
+
+  activeAccent = theme.accentInk;
+
+  // Keep the browser chrome in step with the canvas, which rotates with the hue.
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', theme.canvas);
 }
 
 /**

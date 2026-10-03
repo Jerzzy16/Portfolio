@@ -8,7 +8,7 @@ export type CSSVars = CSSProperties & Record<`--${string}`, string | number>;
  * Scroll reveal. Purpose: storytelling, content enters in reading order.
  * Transform and opacity only. Collapses to static under reduced motion.
  */
-type RevealTag = 'div' | 'li' | 'article' | 'section';
+type RevealTag = 'div' | 'li' | 'article' | 'section' | 'tr';
 
 export function Reveal({
   children,
@@ -89,6 +89,27 @@ export function usePrefersReducedMotion(): boolean {
   }, []);
 
   return reduce;
+}
+
+/**
+ * Tracks a media query. The initial value is read synchronously from
+ * matchMedia rather than set in an effect, so the first paint is already correct
+ * and nothing below has to render both branches and hide one.
+ */
+export function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(query).matches,
+  );
+
+  useEffect(() => {
+    const list = window.matchMedia(query);
+    const onChange = (event: MediaQueryListEvent) => setMatches(event.matches);
+    setMatches(list.matches);
+    list.addEventListener('change', onChange);
+    return () => list.removeEventListener('change', onChange);
+  }, [query]);
+
+  return matches;
 }
 
 export default Reveal;

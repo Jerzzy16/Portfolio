@@ -1,8 +1,8 @@
 import { ArrowUpRight } from '@phosphor-icons/react';
 
-import { projects, queries, type ProjectSpan, type ProjectStatus } from '@/data/profile';
 import Reveal from '@/components/Reveal';
 import SectionHeader from '@/components/SectionHeader';
+import { projects, queries, type ProjectSpan, type ProjectStatus } from '@/data/profile';
 
 // Row 1: 7 + 5. Row 2: (feature bleeds) + 5. Row 3: 5 + 7. Always 12 columns.
 const SPAN: Record<ProjectSpan, string> = {
@@ -19,7 +19,7 @@ const STATUS: Record<ProjectStatus, { label: string; className: string }> = {
 
 export default function Projects() {
   return (
-    <section id="projects" className="relative scroll-mt-20 py-20 md:py-28">
+    <section id="projects" className="relative scroll-mt-20">
       <div className="container-page">
         <Reveal>
           <SectionHeader
@@ -47,7 +47,9 @@ export default function Projects() {
                     <img
                       src={project.image}
                       alt=""
-                      loading={index === 0 ? 'eager' : 'lazy'}
+                      width={project.imageWidth}
+                      height={project.imageHeight}
+                      loading="lazy"
                       decoding="async"
                       className="absolute inset-0 size-full object-cover grayscale opacity-55 transition-[filter,opacity] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:opacity-80"
                     />
@@ -64,7 +66,7 @@ export default function Projects() {
                     className="relative flex-1 border-b border-ink-line"
                     style={{
                       backgroundImage:
-                        'linear-gradient(to right, rgb(159 232 112 / 0.14) 1px, transparent 1px), linear-gradient(to bottom, rgb(159 232 112 / 0.14) 1px, transparent 1px)',
+                        'linear-gradient(to right, rgba(var(--color-primary-rgb), 0.14) 1px, transparent 1px), linear-gradient(to bottom, rgba(var(--color-primary-rgb), 0.14) 1px, transparent 1px)',
                       backgroundSize: '22px 22px',
                     }}
                   >
@@ -81,17 +83,23 @@ export default function Projects() {
 
                 <div className="flex flex-1 flex-col p-5">
                   <div className="flex items-baseline justify-between gap-4">
-                    <h3 className="font-display text-xl font-extrabold tracking-tight text-canvas-soft">
+                    <h3 className="min-w-0 font-display text-xl font-extrabold tracking-tight break-words text-canvas-soft">
                       {project.title}
                     </h3>
-                    <span className="font-mono text-[11px] text-mute">{project.year}</span>
+                    <span className="shrink-0 font-mono text-[11px] tabular-nums text-mute">
+                      {project.year}
+                    </span>
                   </div>
 
-                  <p className="mt-3 leading-relaxed text-body">{project.blurb}</p>
+                  <p className="mt-3 leading-relaxed break-words text-body">{project.blurb}</p>
 
                   <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 pt-4">
                     {project.stack.map((item) => (
-                      <span key={item} className="font-mono text-[11px] text-mute">
+                      <span
+                        key={item}
+                        translate="no"
+                        className="font-mono text-[11px] text-mute"
+                      >
                         {item}
                       </span>
                     ))}
@@ -107,9 +115,9 @@ export default function Projects() {
                     <a
                       href={project.href}
                       aria-label={`Open ${project.title}`}
-                      className="flex size-9 items-center justify-center rounded-action border border-ink-line text-mute transition-[transform,border-color,color] duration-150 hover:border-primary hover:text-primary active:scale-[0.94]"
+                      className="flex size-9 shrink-0 items-center justify-center rounded-action border border-ink-line text-mute transition-[transform,border-color,color] duration-150 hover:border-primary hover:text-primary active:scale-[0.94]"
                     >
-                      <ArrowUpRight size={16} weight="bold" />
+                      <ArrowUpRight size={16} weight="bold" aria-hidden="true" />
                     </a>
                   </div>
                 </div>

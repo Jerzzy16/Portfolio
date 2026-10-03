@@ -3,30 +3,27 @@
  * query line, then an optional note.
  *
  * The query line is the motif from the reference. It earns its place because it
- * states what the section actually holds rather than describing it.
+ * states what the section actually holds rather than describing it. It wraps
+ * rather than scrolling horizontally, so it never introduces a scroll region
+ * the reader has no reason to expect inside a heading block.
  */
 export default function SectionHeader({
   title,
   query,
   note,
-  id,
 }: {
   title: string;
   query?: string;
   note?: string;
-  id?: string;
 }) {
   return (
     <header className="mb-10 md:mb-14">
-      <h2
-        id={id}
-        className="text-section-title text-[length:var(--text-section)] text-canvas-soft"
-      >
+      <h2 className="text-section-title text-[length:var(--text-section)] text-canvas-soft">
         {title}
       </h2>
 
       {query && (
-        <p className="mt-3 overflow-x-auto font-mono text-[10.5px] leading-relaxed whitespace-nowrap text-primary md:text-xs">
+        <p className="mt-3 font-mono text-[10.5px] leading-relaxed break-words text-primary md:text-xs">
           {query}
         </p>
       )}

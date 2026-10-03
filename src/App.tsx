@@ -10,8 +10,17 @@ import Skills from '@/components/Skills';
 export default function App() {
   return (
     <div className="relative min-h-[100dvh]">
+      {/* First tab stop. The nav sits above the hero, so without this a keyboard
+          user walks five links before reaching any content. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-100 focus:rounded-action focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-ink"
+      >
+        Skip to Content
+      </a>
+
       <Header />
-      <main className="relative z-10">
+      <main id="main" className="relative z-10">
         <Hero />
         <Projects />
         <Skills />

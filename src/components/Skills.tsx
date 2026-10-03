@@ -1,12 +1,19 @@
+import { getActiveAccent } from '@/lib/palette';
 import { queries, skillGroups } from '@/data/profile';
 import Reveal from '@/components/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 
 /**
- * Clustered skill tiles. Real brand marks from the Simple Icons CDN,
- * tinted to the single page accent so the palette stays locked.
+ * Clustered skill tiles. Real brand marks from the Simple Icons CDN, tinted to
+ * the active accent so the palette stays locked.
+ *
+ * The CDN takes the colour as a hex in the path and cannot read a CSS custom
+ * property, so the resolved accent is read from the palette rather than
+ * hardcoded. A fixed hex here left every logo lime on the other five themes.
  */
 export default function Skills() {
+  const accent = getActiveAccent().replace('#', '');
+
   return (
     <section id="skills" className="relative scroll-mt-20 py-20 md:py-28">
       <div className="container-page">
@@ -33,7 +40,7 @@ export default function Skills() {
                         className="panel group flex items-center gap-3 px-4 py-3.5 transition-[transform,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:border-primary/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
                       >
                         <img
-                          src={`https://cdn.simpleicons.org/${skill.icon}/9fe870`}
+                          src={`https://cdn.simpleicons.org/${skill.icon}/${accent}`}
                           alt=""
                           width={20}
                           height={20}
@@ -44,7 +51,10 @@ export default function Skills() {
                             event.currentTarget.style.visibility = 'hidden';
                           }}
                         />
-                        <span className="text-sm text-body transition-colors duration-200 group-hover:text-canvas-soft">
+                        <span
+                          translate="no"
+                          className="text-sm break-words text-body transition-colors duration-200 group-hover:text-canvas-soft"
+                        >
                           {skill.name}
                         </span>
                       </a>

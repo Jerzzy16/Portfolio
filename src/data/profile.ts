@@ -52,6 +52,9 @@ export type Project = {
   year: string;
   href: string;
   image: string;
+  /** Intrinsic size of `image`, so the browser reserves the box before it loads. */
+  imageWidth: number;
+  imageHeight: number;
   span: ProjectSpan;
 };
 
@@ -240,6 +243,8 @@ export const projects: readonly Project[] = [
     year: '2025',
     href: '#',
     image: 'https://picsum.photos/seed/ledger-service-dark/1200/800',
+    imageWidth: 1200,
+    imageHeight: 800,
     span: 'feature',
   },
   {
@@ -252,6 +257,8 @@ export const projects: readonly Project[] = [
     year: '2024',
     href: '#',
     image: 'https://picsum.photos/seed/terminal-tooling-dark/800/800',
+    imageWidth: 800,
+    imageHeight: 800,
     span: 'third',
   },
   {
@@ -264,6 +271,8 @@ export const projects: readonly Project[] = [
     year: '2024',
     href: '#',
     image: 'https://picsum.photos/seed/logistics-dashboard-dark/800/600',
+    imageWidth: 800,
+    imageHeight: 600,
     span: 'third',
   },
   {
@@ -276,6 +285,8 @@ export const projects: readonly Project[] = [
     year: '2023',
     href: '#',
     image: 'https://picsum.photos/seed/indie-game-cave-dark/800/800',
+    imageWidth: 800,
+    imageHeight: 800,
     span: 'third',
   },
   {
@@ -288,6 +299,8 @@ export const projects: readonly Project[] = [
     year: '2022',
     href: '#',
     image: 'https://picsum.photos/seed/underwater-unity-dark/800/600',
+    imageWidth: 800,
+    imageHeight: 600,
     span: 'seven',
   },
 ];
@@ -334,12 +347,18 @@ export const skillGroups: readonly SkillGroup[] = [
   },
 ];
 
+/*
+  `period` is an authored year range, so it is written as text rather than as a
+  pair of dates: an en dash between non-breaking spaces, which stops the range
+  wrapping across a line break. Formatting these with Intl.DateTimeFormat would
+  need start/end years in the data instead of a pre-joined string.
+ */
 // PLACEHOLDER
 export const experience: readonly ExperienceEntry[] = [
   {
     role: 'Senior Software Engineer',
     company: 'Kestrel Logistics',
-    period: '2024 - Present',
+    period: '2024\u00a0\u2013\u00a0Present',
     notes: [
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.',
       'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.',
@@ -348,7 +367,7 @@ export const experience: readonly ExperienceEntry[] = [
   {
     role: 'Software Engineer',
     company: 'Bright Harbor Health',
-    period: '2022 - 2024',
+    period: '2022\u00a0\u2013\u00a02024',
     notes: [
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.',
       'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
@@ -357,7 +376,7 @@ export const experience: readonly ExperienceEntry[] = [
   {
     role: 'Backend Developer',
     company: 'Corvus Analytics',
-    period: '2020 - 2022',
+    period: '2020\u00a0\u2013\u00a02022',
     notes: [
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.',
       'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
@@ -366,7 +385,7 @@ export const experience: readonly ExperienceEntry[] = [
   {
     role: 'Software Engineering Intern',
     company: 'Tidewell Interactive',
-    period: '2019 - 2020',
+    period: '2019\u00a0\u2013\u00a02020',
     notes: [
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna.',
     ],
@@ -378,7 +397,7 @@ export const education: readonly EducationEntry[] = [
   {
     degree: 'B.S. Computer Science',
     school: 'Northgate University',
-    period: '2016 - 2020',
+    period: '2016\u00a0\u2013\u00a02020',
     detail:
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Coursework in distributed systems, compilers, and human-computer interaction.',
   },
@@ -392,7 +411,7 @@ export const education: readonly EducationEntry[] = [
   {
     degree: 'Self-directed study',
     school: 'Independent',
-    period: '2022 - Present',
+    period: '2022\u00a0\u2013\u00a0Present',
     detail:
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ongoing focus on rendering, physics, and developer experience tooling.',
   },

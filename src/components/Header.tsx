@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
 import { List, X } from '@phosphor-icons/react';
+import { useEffect, useRef, useState } from 'react';
 
-import { nav, person, schemaLabel } from '@/data/profile';
 import {
   usePrefersReducedMotion,
   useScrolledPastHeader,
   useScrollLock,
   type CSSVars,
 } from '@/components/Reveal';
+import { nav, person, schemaLabel } from '@/data/profile';
 
 /**
  * Desktop shows all five links on one line. Below md they collapse into a
@@ -22,6 +22,10 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const reduce = usePrefersReducedMotion();
 
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+
   useScrollLock(open);
 
   useEffect(() => {
@@ -31,6 +35,34 @@ export default function Header() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  /*
+    The drawer covers the viewport but sits below the header in z, so without
+    this the page behind stays in the tab order and keyboard users walk straight
+    out of an open menu into content they cannot see. `inert` removes the
+    background from both the tab order and the accessibility tree, and moves
+    focus into the drawer on open and back to the trigger on close.
+   */
+  useEffect(() => {
+    const behind = [
+      document.querySelector('a[href="#main"]'),
+      document.querySelector('main'),
+      document.querySelector('footer'),
+    ];
+
+    if (open) {
+      behind.forEach((el) => el?.setAttribute('inert', ''));
+      wasOpen.current = true;
+      drawerRef.current?.querySelector<HTMLElement>('a[href]')?.focus();
+
+      return () => behind.forEach((el) => el?.removeAttribute('inert'));
+    }
+
+    if (wasOpen.current) {
+      wasOpen.current = false;
+      toggleRef.current?.focus();
+    }
   }, [open]);
 
   const sheetStyle: CSSVars = {
@@ -57,6 +89,7 @@ export default function Header() {
         <div className="container-page relative z-10 flex h-16 items-center justify-between gap-6">
           <a
             href="#top"
+            translate="no"
             className="font-mono text-[9.5px] tracking-[0.08em] text-canvas-soft transition-colors duration-200 hover:text-primary md:text-xs md:tracking-[0.14em]"
           >
             {schemaLabel.name}
@@ -78,14 +111,19 @@ export default function Header() {
           </nav>
 
           <button
+            ref={toggleRef}
             type="button"
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls="mobile-drawer"
             aria-label={open ? 'Close menu' : 'Open menu'}
-            className="flex size-10 items-center justify-center rounded-action border border-ink-line text-canvas-soft transition-[transform,border-color,color] duration-150 hover:border-primary hover:text-primary active:scale-[0.97] md:hidden"
+            className="flex size-10 items-center justify-center text-canvas-soft transition-[transform,border-color,color] duration-150 hover:border-primary hover:text-primary active:scale-[0.97] md:hidden"
           >
-            {open ? <X size={18} weight="bold" /> : <List size={18} weight="bold" />}
+            {open ? (
+              <X size={18} weight="bold" aria-hidden="true" />
+            ) : (
+              <List size={18} weight="bold" aria-hidden="true" />
+            )}
           </button>
         </div>
       </header>
@@ -94,7 +132,8 @@ export default function Header() {
           sits above it so the close button is always reachable. */}
       <div
         id="mobile-drawer"
-        className={`fixed inset-0 z-40 bg-ink px-5 pb-10 pt-20 md:hidden ${
+        ref={drawerRef}
+        className={`drawer fixed inset-0 z-40 overflow-y-auto bg-ink md:hidden ${
           open ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
         hidden={!open}
