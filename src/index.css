@@ -260,20 +260,21 @@ html {
     overflow: hidden;
   }
 
+/* Stage box. Width and height come from the layout, which differs per mode:
+     authored constants for the wide arrangement, solved from measured card
+     heights for the portrait one. */
   .diagram-stage {
     position: relative;
-    width: 1120px;
-    height: 680px;
     transform-origin: top left;
   }
 
-  .diagram-svg {
+.diagram-svg {
     position: absolute;
     inset: 0;
     overflow: visible;
   }
 
-.diagram-note {
+  .diagram-note {
     margin-top: 1.25rem;
     font-family: var(--font-mono);
     font-size: 0.6875rem;
@@ -289,13 +290,6 @@ html {
 
   /* Mobile-only edge caption. Carries the cardinality the connectors show on
      desktop, so re-flowing the diagram does not drop the relationship. */
-  .diagram-edge {
-    padding: 0.5rem 0.75rem;
-    border-top: 1px solid var(--color-ink-line);
-    font-family: var(--font-mono);
-    font-size: 0.6875rem;
-    color: var(--color-mute);
-  }
 
   /* Corner crosshairs. Outside the border, so cards never use overflow-hidden. */
   .corner {
@@ -349,18 +343,10 @@ html {
     animation: rise 620ms var(--ease-out-expo) forwards;
   }
 
-  /* Desktop: taken from an authored slot inside the scaled stage. */
+  /* Every card is taken from a slot. Which slot, and whether those slots are
+     authored constants or solved from measured heights, is the layout's call. */
   .card.slot {
     position: absolute;
-  }
-
-  /* Mobile: natural flow at full size. The stage cannot simply be scaled down,
-     because at a 375px viewport the scale factor lands near 0.29 and every
-     label in the diagram drops to roughly 4px. */
-  .card.flow {
-    position: relative;
-    display: block;
-    width: 100%;
   }
 
   .hoverable {

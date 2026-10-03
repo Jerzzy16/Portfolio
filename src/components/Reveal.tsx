@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 
 /** Style object that also accepts CSS custom properties. */
@@ -110,6 +110,33 @@ export function useMediaQuery(query: string): boolean {
   }, [query]);
 
   return matches;
+}
+
+/**
+ * Tracks whether an element's content overflows it horizontally.
+ *
+ * Used to decide whether a scroll container needs the accessible plumbing for
+ * one. A permanently focusable `role="region"` is a phantom tab stop on every
+ * screen size where nothing actually scrolls, so the wiring follows the real
+ * measurement rather than a breakpoint guessed from the surrounding padding.
+ */
+export function useOverflowX<T extends HTMLElement>(): [RefObject<T | null>, boolean] {
+  const ref = useRef<T>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const check = () => setOverflowing(el.scrollWidth > el.clientWidth + 1);
+    check();
+
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return [ref, overflowing];
 }
 
 export default Reveal;
