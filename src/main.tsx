@@ -7,6 +7,13 @@ import '@fontsource-variable/geist-mono';
 import '@/index.css';
 
 import App from '@/App';
+import { applyPalette, pickPalette, verifyPalette } from '@/lib/palette';
+
+// The accent rotates on every page load. Nothing is written to storage, so a
+// refresh always lands on a different hue. Paint before first render so the
+// page never flashes the default lime.
+applyPalette(pickPalette());
+verifyPalette();
 
 const container = document.getElementById('root');
 

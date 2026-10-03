@@ -1,6 +1,6 @@
-import { person, schemaLabel } from '@/data/profile';
-import SchemaDiagram from '@/components/SchemaDiagram';
 import type { CSSVars } from '@/components/Reveal';
+import SchemaDiagram from '@/components/SchemaDiagram';
+import { person, schemaLabel } from '@/data/profile';
 
 export default function Hero() {
   return (
@@ -28,18 +28,6 @@ export default function Hero() {
         >
           {person.intro}
         </p>
-
-        <div
-          className="rise mt-9 flex flex-wrap items-center justify-center gap-3"
-          style={{ animationDelay: '210ms' } as CSSVars}
-        >
-          <a href="#projects" className="action action-primary">
-            Projects
-          </a>
-          <a href="#contact" className="action action-ghost">
-            Contact
-          </a>
-        </div>
 
         <div className="rise mt-16 md:mt-24" style={{ animationDelay: '280ms' } as CSSVars}>
           <SchemaDiagram />

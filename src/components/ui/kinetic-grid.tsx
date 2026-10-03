@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
  * Adapted from the supplied kinetic-grid.tsx. Three deliberate departures from
  * the original, all documented where they occur:
  *   1. Colour is a prop, not a hardcoded blue/black pair, so the canvas obeys
- *      the page's single-accent lock (see ACCENTS below).
+ *      the page's single-accent lock (see readAccent below).
  *   2. The canvas sizes to its container, not window.innerWidth, so it can be
  *      scoped to the hero instead of swallowing the whole document.
  *   3. The render loop is gated on visibility, device pixel ratio, and
@@ -46,10 +46,15 @@ export interface KineticGridProps {
   /** Applied to the host element. Use this for z-index and positioning. */
   style?: CSSProperties;
   /**
-   * 'lime'   the page accent (default)
-   * 'mono'   pure white, no hue
+   * CSS custom property holding the accent as "r, g, b". Read at paint time, so
+   * it follows the per-load palette rotation without a re-render.
+   * Defaults to the page accent token.
    */
-  accent?: 'lime' | 'mono';
+  accentVar?: string;
+  /** Grid pitch in px. Lower it for short bands like a header strip. */
+  cellSize?: number;
+  /** Pointer influence radius in px. Scale with cellSize. */
+  influenceRadius?: number;
   /** Fill painted under the grid. 'transparent' lets the page canvas show. */
   background?: string;
   /** Paint the static dot texture. Turn off for very large canvases. */
@@ -69,21 +74,8 @@ const NODE_BASE: RGBA = { r: 232, g: 235, b: 230, a: 0.2 };
 const NODE_BASE_RADIUS = 1.8;
 const NODE_ACTIVE_RADIUS = 3.2;
 
-/** Departure 1: the accent is data, not a literal. 159,232,112 is #9fe870. */
-const ACCENTS: Record<'lime' | 'mono', Accent> = {
-  lime: {
-    line: { r: 159, g: 232, b: 112, a: 0.55 },
-    node: { r: 159, g: 232, b: 112, a: 1 },
-    glow: '159,232,112',
-    ripple: '159,232,112',
-  },
-  mono: {
-    line: { r: 255, g: 255, b: 255, a: 0.9 },
-    node: { r: 255, g: 255, b: 255, a: 1 },
-    glow: '255,255,255',
-    ripple: '255,255,255',
-  },
-};
+const IDLE_MS = 1200;
+const MAX_DPR = 2;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -103,13 +95,42 @@ function lerpColor(base: RGBA, active: RGBA, t: number): string {
   return `rgba(${r},${g},${b},${a.toFixed(3)})`;
 }
 
+/**
+ * Reads the accent as "r, g, b" off the document at paint time rather than
+ * closing over a value. That is what lets the per-load palette rotation in
+ * src/lib/palette.ts recolour the canvas without re-rendering this component.
+ */
+function readAccent(name: string, fallback: Accent): Accent {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const parts = raw.split(',').map((n) => Number.parseFloat(n));
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return fallback;
+  const [r, g, b] = parts;
+  const rgb = `${r}, ${g}, ${b}`;
+  return {
+    line: { r, g, b, a: 0.55 },
+    node: { r, g, b, a: 1 },
+    glow: rgb,
+    ripple: rgb,
+  };
+}
+
+/** Static neutral fallback, only used if the custom property is missing. */
+const FALLBACK_ACCENT: Accent = {
+  line: { r: 159, g: 232, b: 112, a: 0.55 },
+  node: { r: 159, g: 232, b: 112, a: 1 },
+  glow: '159, 232, 112',
+  ripple: '159, 232, 112',
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function KineticGrid({
   children,
   className,
   style,
-  accent = 'lime',
+  accentVar = '--color-primary-rgb',
+  cellSize = CELL_SIZE,
+  influenceRadius = INFLUENCE_RADIUS,
   background = 'transparent',
   showDots = true,
 }: KineticGridProps) {
@@ -122,6 +143,9 @@ export default function KineticGrid({
   const rafRef = useRef<number>(0);
   const sizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
   const lastMoveRef = useRef(0);
+
+  /** Warp scales with the grid pitch so a tight band behaves like a wide one. */
+  const maxWarp = cellSize * (MAX_WARP / CELL_SIZE);
 
   // ── Warp ────────────────────────────────────────────────────────────────────
 
@@ -145,7 +169,7 @@ export default function KineticGrid({
       const dx = gx - mouse.x;
       const dy = gy - mouse.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      const proximity = Math.max(0, 1 - dist / INFLUENCE_RADIUS) * pinFactor;
+      const proximity = Math.max(0, 1 - dist / influenceRadius) * pinFactor;
 
       let rx = 0;
       let ry = 0;
@@ -165,10 +189,10 @@ export default function KineticGrid({
       }
 
       // Cursor warp with bell falloff.
-      if (dist < INFLUENCE_RADIUS && dist > 0 && pinFactor > 0) {
-        const t = dist / INFLUENCE_RADIUS;
+      if (dist < influenceRadius && dist > 0 && pinFactor > 0) {
+        const t = dist / influenceRadius;
         const eased = t < 0.01 ? 0 : (1 - t) * (1 - t) * Math.min(1, dist / 60);
-        const warpAmt = eased * MAX_WARP * pinFactor;
+        const warpAmt = eased * maxWarp * pinFactor;
         const angle = Math.atan2(dy, dx);
         return {
           pt: {
@@ -181,7 +205,7 @@ export default function KineticGrid({
 
       return { pt: { x: gx + rx, y: gy + ry }, proximity };
     },
-    [],
+    [influenceRadius, maxWarp],
   );
 
   // ── Draw ────────────────────────────────────────────────────────────────────
@@ -199,7 +223,7 @@ export default function KineticGrid({
       const dpr = window.devicePixelRatio || 1;
       const mouse = mouseRef.current;
       const ripples = ripplesRef.current;
-      const theme = ACCENTS[accent];
+      const theme = readAccent(accentVar, FALLBACK_ACCENT);
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
@@ -228,8 +252,8 @@ export default function KineticGrid({
         if (r.opacity <= 0) ripples.splice(i, 1);
       }
 
-      const cols = Math.max(2, Math.ceil(W / CELL_SIZE)) + 1;
-      const rows = Math.max(2, Math.ceil(H / CELL_SIZE)) + 1;
+      const cols = Math.max(2, Math.ceil(W / cellSize)) + 1;
+      const rows = Math.max(2, Math.ceil(H / cellSize)) + 1;
       const cellW = W / (cols - 1);
       const cellH = H / (rows - 1);
 
@@ -308,7 +332,7 @@ export default function KineticGrid({
         ctx.stroke();
       }
     },
-    [accent, background, getWarpedPoint, showDots],
+    [accentVar, background, cellSize, getWarpedPoint, showDots],
   );
 
   // ── Loop ────────────────────────────────────────────────────────────────────
@@ -329,14 +353,13 @@ export default function KineticGrid({
     if (!canvas || !host) return;
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const IDLE_MS = 1200;
 
     const measure = () => {
       const rect = host.getBoundingClientRect();
       const w = Math.max(1, Math.round(rect.width));
       const h = Math.max(1, Math.round(rect.height));
-      // Cap at 2x. A 3x phone backing store triples fill cost for no gain.
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // Cap at 2x. A 3x phone backing store triples fill cost for no visible gain.
+const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
 
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
@@ -419,7 +442,13 @@ export default function KineticGrid({
 
     const onClick = (event: MouseEvent) => {
       if (reduceMotion.matches) return;
-      const { x, y } = localPoint(event);
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      // The field can be a band rather than the whole page, so ignore clicks
+      // that land outside it. Without this, a ripple would be born invisible.
+      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
+
       ripplesRef.current.push({ x, y, radius: 0, opacity: 1, born: performance.now() });
       lastMoveRef.current = performance.now();
       start();

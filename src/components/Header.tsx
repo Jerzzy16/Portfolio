@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { List, X } from '@phosphor-icons/react';
 
 import { nav, person } from '@/data/profile';
+import KineticGrid from '@/components/ui/kinetic-grid';
 import {
   overlayStyle,
   usePrefersReducedMotion,
@@ -9,6 +10,46 @@ import {
   useScrollLock,
   type CSSVars,
 } from '@/components/Reveal';
+
+/**
+ * The vector field lives only here, per the brief. It is a band behind the nav
+ * that dissolves downward, so it reads as the header emerging out of the page
+ * rather than as a texture laid over the whole document.
+ *
+ * Two stacked layers do the dissolving:
+ *   1. the canvas grid, masked to a hard top edge and a soft bottom edge
+ *   2. a wash in the live accent, fading from the top of the page to nothing
+ * The accent is read from --color-primary-rgb, so both follow the per-load
+ * palette rotation with no extra wiring.
+ */
+function HeaderField() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[260px]">
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(to bottom, rgb(var(--color-primary-rgb) / 0.13) 0%, rgb(var(--color-primary-rgb) / 0.05) 42%, transparent 88%)',
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          // Fade the grid out downward. No scroll listener, pure mask.
+          maskImage: 'linear-gradient(to bottom, #000 0%, #000 22%, transparent 92%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 22%, transparent 92%)',
+        }}
+      >
+        <KineticGrid
+          cellSize={38}
+          influenceRadius={190}
+          showDots
+          className="size-full"
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function Header() {
   const scrolled = useScrolledPastHeader(12);
@@ -42,13 +83,14 @@ export default function Header() {
 
       <header
         style={overlayStyle('header')}
-        className={`fixed inset-x-0 top-0 transition-[background-color,border-color,backdrop-filter] duration-200 ${
-          scrolled || open
-            ? 'border-b border-ink-line bg-ink/85 backdrop-blur-md'
-            : 'border-b border-transparent bg-transparent'
+        className={`fixed inset-x-0 top-0 transition-[background-color,border-color] duration-300 ${
+          scrolled || open ? 'border-b border-ink-line bg-ink/80' : 'border-b border-transparent'
         }`}
       >
-        <div className="container-page flex h-16 items-center justify-between gap-6">
+        <HeaderField />
+
+        {/* Nav sits above both field layers. */}
+        <div className="container-page relative z-10 flex h-16 items-center justify-between gap-6">
           <a
             href="#top"
             className="font-mono text-xs tracking-[0.14em] text-canvas-soft transition-colors duration-200 hover:text-primary"

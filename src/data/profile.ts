@@ -23,6 +23,18 @@ export type SchemaBlock = {
   fields: readonly (readonly [name: string, type: string])[];
 };
 
+/**
+ * An edge in the diagram. `label` is read PARENT to CHILD, outward from
+ * db.person, so '1:N' means one person relates to many child documents.
+ * The same edge read inward is 'N:1'. The convention is printed under the
+ * diagram because the two notations are otherwise indistinguishable.
+ */
+export type SchemaRelation = {
+  from: string;
+  to: string;
+  label: '1:1' | '1:N' | 'N:1';
+};
+
 /** Bento placement. Together they always total 12 columns at md+. */
 export type ProjectSpan = 'feature' | 'third' | 'seven';
 
@@ -157,15 +169,30 @@ export const schemaBlocks: readonly SchemaBlock[] = [
     ],
   },
   {
+    // One contact record per person, so the count is 1. It previously read
+    // "3 docs" because github, linkedin and email were counted as rows when
+    // they are columns of a single row, and it carried no person_id at all,
+    // which meant the relationship to db.person did not exist.
     id: 'db.contact',
-    docs: 3,
+    docs: 1,
     href: '#contact',
     fields: [
+      ['person_id', 'ref'],
       ['github', 'String'],
       ['linkedin', 'String'],
       ['email', 'String'],
     ],
   },
+];
+
+/** Every child collection holds a single person_id, so each is one-to-many.
+ *  db.contact is the exception: one person, one contact record. */
+export const schemaRelations: readonly SchemaRelation[] = [
+  { from: 'db.person', to: 'db.experience', label: '1:N' },
+  { from: 'db.person', to: 'db.skills', label: '1:N' },
+  { from: 'db.person', to: 'db.projects', label: '1:N' },
+  { from: 'db.person', to: 'db.education', label: '1:N' },
+  { from: 'db.person', to: 'db.contact', label: '1:1' },
 ];
 
 /**

@@ -13,9 +13,14 @@
   --color-ink-lift: #1a1c16;
   --color-ink-line: #23251e;
 
-  /* Brand accent. One accent, whole page. */
+  /* Brand accent. Overwritten at runtime by src/lib/palette.ts, which picks one
+     of five hues per page load. --color-primary is the legible variant, so text
+     and solid fills are accessible for every entry in the rotation. */
   --color-primary: #9fe870;
-  --color-primary-active: #cdffad;
+  --color-primary-base: #9fe870;
+  --color-primary-rgb: 159, 232, 112;
+  --color-primary-base-rgb: 159, 232, 112;
+  --color-primary-active: #b6f18d;
   --color-primary-neutral: #c5edab;
   --color-primary-pale: #e2f6d5;
 
@@ -53,11 +58,11 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* z-index scale. Systemic layers only. The grid field sits under content, the
-   header sits over the mobile sheet so the close button is always reachable. */
+/* z-index scale. Systemic layers only. Header sits over the mobile sheet so
+   the close button is always reachable. The header's own vector field is a
+   child layer at z-0 with the nav at z-10, so it needs no token. */
 @layer base {
   :root {
-    --z-grid: 0;
     --z-sheet: 40;
     --z-header: 50;
   }
@@ -245,9 +250,13 @@
   }
 }
 
-@keyframes draw {
+/*
+    pathLength="100" normalises every connector to a 0-100 dash space, so one
+    keyframe animates a 40px elbow and a 900px run identically.
+  */
+@keyframes draw-pct {
   from {
-    stroke-dashoffset: var(--draw-len, 400);
+    stroke-dashoffset: 100;
   }
   to {
     stroke-dashoffset: 0;
@@ -286,20 +295,20 @@
   animation: node-in 400ms var(--ease-out-ui) both;
 }
 
-.draw {
-  stroke-dasharray: var(--draw-len, 400);
-  animation: draw 1100ms var(--ease-out-expo) both;
+.draw-pct {
+  stroke-dasharray: 100;
+  animation: draw-pct 900ms var(--ease-out-expo) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rise,
-  .draw,
+  .draw-pct,
   .fade,
   .node-in {
     animation: none !important;
   }
 
-  .draw {
+  .draw-pct {
     stroke-dasharray: none;
   }
 
