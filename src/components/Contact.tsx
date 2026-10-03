@@ -1,6 +1,6 @@
 import { ArrowRight, EnvelopeSimple } from '@phosphor-icons/react';
 
-import { person } from '@/data/profile';
+import { person, queries } from '@/data/profile';
 import Reveal from '@/components/Reveal';
 
 export default function Contact() {
@@ -9,7 +9,7 @@ export default function Contact() {
       <div className="container-page">
         <Reveal>
           <div className="panel overflow-hidden px-6 py-14 md:px-14 md:py-20">
-            <p className="tech-label">status: {person.status}</p>
+            <p className="tech-label">{queries.contact}</p>
 
             <h2 className="text-section-title mt-5 max-w-[16ch] text-[length:var(--text-display)] text-primary">
               Lorem ipsum dolor sit amet.

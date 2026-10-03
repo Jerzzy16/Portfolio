@@ -1,4 +1,4 @@
-import { skillGroups } from '@/data/profile';
+import { queries, skillGroups } from '@/data/profile';
 import Reveal from '@/components/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 
@@ -13,6 +13,7 @@ export default function Skills() {
         <Reveal>
           <SectionHeader
             title="Skills"
+            query={queries.skills}
             note="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi, sed do eiusmod tempor incididunt."
           />
         </Reveal>

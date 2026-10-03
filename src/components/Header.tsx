@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { List, X } from '@phosphor-icons/react';
 
-import { nav, person } from '@/data/profile';
-import KineticGrid from '@/components/ui/kinetic-grid';
+import { nav, person, schemaLabel } from '@/data/profile';
 import {
-  overlayStyle,
   usePrefersReducedMotion,
   useScrolledPastHeader,
   useScrollLock,
@@ -12,45 +10,13 @@ import {
 } from '@/components/Reveal';
 
 /**
- * The vector field lives only here, per the brief. It is a band behind the nav
- * that dissolves downward, so it reads as the header emerging out of the page
- * rather than as a texture laid over the whole document.
+ * Desktop shows all five links on one line. Below md they collapse into a
+ * drawer, because the full set cannot fit a 320px viewport at a legible size.
  *
- * Two stacked layers do the dissolving:
- *   1. the canvas grid, masked to a hard top edge and a soft bottom edge
- *   2. a wash in the live accent, fading from the top of the page to nothing
- * The accent is read from --color-primary-rgb, so both follow the per-load
- * palette rotation with no extra wiring.
+ * The header carries no vector field of its own. The hero owns the field and
+ * spans behind the nav while the page is at the top, so drawing one here too
+ * would double the texture and break the fade at the projects boundary.
  */
-function HeaderField() {
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[260px]">
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(to bottom, rgb(var(--color-primary-rgb) / 0.13) 0%, rgb(var(--color-primary-rgb) / 0.05) 42%, transparent 88%)',
-        }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          // Fade the grid out downward. No scroll listener, pure mask.
-          maskImage: 'linear-gradient(to bottom, #000 0%, #000 22%, transparent 92%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 22%, transparent 92%)',
-        }}
-      >
-        <KineticGrid
-          cellSize={38}
-          influenceRadius={190}
-          showDots
-          className="size-full"
-        />
-      </div>
-    </div>
-  );
-}
-
 export default function Header() {
   const scrolled = useScrolledPastHeader(12);
   const [open, setOpen] = useState(false);
@@ -82,31 +48,29 @@ export default function Header() {
       <div id="header-sentinel" aria-hidden="true" className="absolute top-0 h-px w-full" />
 
       <header
-        style={overlayStyle('header')}
-        className={`fixed inset-x-0 top-0 transition-[background-color,border-color] duration-300 ${
-          scrolled || open ? 'border-b border-ink-line bg-ink/80' : 'border-b border-transparent'
+        className={`fixed inset-x-0 top-0 z-50 transition-[background-color,border-color] duration-300 ${
+          scrolled || open
+            ? 'border-b border-ink-line bg-ink/80'
+            : 'border-b border-transparent'
         }`}
       >
-        <HeaderField />
-
-        {/* Nav sits above both field layers. */}
         <div className="container-page relative z-10 flex h-16 items-center justify-between gap-6">
           <a
             href="#top"
-            className="font-mono text-xs tracking-[0.14em] text-canvas-soft transition-colors duration-200 hover:text-primary"
+            className="font-mono text-[9.5px] tracking-[0.08em] text-canvas-soft transition-colors duration-200 hover:text-primary md:text-xs md:tracking-[0.14em]"
           >
-            {person.wordmark}
+            {schemaLabel.name}
+            <span className="mx-1.5 hidden text-ink-line md:inline">
+              /
+            </span>
+            <span className="hidden md:inline">{schemaLabel.rev}</span>
           </a>
 
-          {/* Single line at desktop, hairline separated. No dot separators. */}
           <nav aria-label="Primary" className="hidden items-center md:flex">
             {nav.map((item, index) => (
               <div key={item.href} className="flex items-center">
-                {index > 0 && <span aria-hidden="true" className="mx-5 h-3 w-px bg-ink-line" />}
-                <a
-                  href={item.href}
-                  className="font-mono text-xs tracking-[0.12em] text-body transition-colors duration-200 hover:text-primary"
-                >
+                {index > 0 && <span aria-hidden="true" className="nav-rule" />}
+                <a href={item.href} className="nav-link">
                   {item.label.toUpperCase()}
                 </a>
               </div>
@@ -117,7 +81,7 @@ export default function Header() {
             type="button"
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
-            aria-controls="mobile-sheet"
+            aria-controls="mobile-drawer"
             aria-label={open ? 'Close menu' : 'Open menu'}
             className="flex size-10 items-center justify-center rounded-action border border-ink-line text-canvas-soft transition-[transform,border-color,color] duration-150 hover:border-primary hover:text-primary active:scale-[0.97] md:hidden"
           >
@@ -126,11 +90,11 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Mobile sheet. Enters from the trigger edge, drawer curve. */}
+      {/* Drawer. Enters from the trigger edge on the drawer curve. The header
+          sits above it so the close button is always reachable. */}
       <div
-        id="mobile-sheet"
-        style={overlayStyle('sheet')}
-        className={`fixed inset-0 bg-ink px-5 pb-10 pt-20 md:hidden ${
+        id="mobile-drawer"
+        className={`fixed inset-0 z-40 bg-ink px-5 pb-10 pt-20 md:hidden ${
           open ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
         hidden={!open}

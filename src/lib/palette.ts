@@ -1,43 +1,59 @@
 /**
- * Accent rotation.
+ * Accent and surface rotation.
  *
- * The five base hexes are supplied by the brief and are used verbatim for
- * strokes, borders, glows and tints. Four of them cannot be used as TEXT on the
- * ink canvas: measured against #0e0f0c they land at 1.08:1 to 1.92:1, which is
- * effectively invisible. Each entry therefore carries a `ink` variant, the same
- * hue lifted in HSL until it clears 7:1 on the canvas.
+ * One hue is picked per page load. It drives everything: the accent, and the
+ * whole neutral ramp, so the canvas reads as a dark tint of the active hue
+ * rather than as grey with a coloured button on it.
  *
- * Token contract, so the whole page follows one rule:
- *   --color-primary       the legible variant. Text on canvas, and solid fills.
- *   --color-primary-base  the brief's hex. Borders, SVG strokes, glows, tints.
- *   --color-primary-ink   the canvas colour, used as a label on primary fills.
+ * Two things made this more than a colour swap:
  *
- * Buttons fill with `--color-primary` and label with `--color-primary-ink`.
- * That pairing measures 7:1 or better for all five entries, so button contrast
- * never depends on which colour is active.
+ * 1. Four of the five supplied base hexes cannot be used as text on a near
+ *    black canvas. Measured against #0e0f0c they land between 1.08:1 and
+ *    1.92:1, which is invisible. Each theme therefore derives an `accentInk`:
+ *    the same hue with lightness raised until it clears 7:1.
+ *
+ * 2. Tinting the canvas means re-solving every text colour against it. Text
+ *    tokens are held at a faint saturation of the theme hue rather than full,
+ *    because a saturated ramp caps achievable luminance below what the display
+ *    type needs. `verifyTheme` re-checks all of it at runtime.
  */
 
-export type PaletteEntry = {
+export type Theme = {
   id: string;
-  /** The brief's hex. Surfaces only. */
-  base: string;
-  /** Same hue, lifted until it clears 7:1 on the canvas. Text and fills. */
-  ink: string;
+  /** Page background. */
+  canvas: string;
+  /** Card and panel background. */
+  surface: string;
+  /** Header bar and badge background inside a card. */
+  surfaceAlt: string;
+  /** Hairline borders and dividers. */
+  line: string;
+  /** Border for the highlighted root card. */
+  lineStrong: string;
+  textPrimary: string;
+  textBody: string;
+  /** Captions and table types. Verified against surfaceAlt, the worst case. */
+  textMute: string;
+  /** The accent, legible on canvas. Text and solid fills. */
+  accentInk: string;
+  /** The supplied hex. Canvas strokes, glows, tints. */
+  accentBase: string;
 };
 
 // ─── Color math ───────────────────────────────────────────────────────────────
 
 type Rgb = { r: number; g: number; b: number };
+type Hsl = { h: number; s: number; l: number };
 
 export function hexToRgb(hex: string): Rgb {
-  const value = hex.replace('#', '');
+  const v = hex.replace('#', '');
   const full =
-    value.length === 3
-      ? value
+    v.length === 3
+      ? v
           .split('')
           .map((c) => c + c)
           .join('')
-      : value;
+      : v;
   return {
     r: parseInt(full.slice(0, 2), 16),
     g: parseInt(full.slice(2, 4), 16),
@@ -45,8 +61,11 @@ export function hexToRgb(hex: string): Rgb {
   };
 }
 
+function clamp(n: number) {
+  return Math.max(0, Math.min(255, Math.round(n)));
+}
+
 export function rgbToHex({ r, g, b }: Rgb): string {
-  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
   return `#${[r, g, b].map((n) => clamp(n).toString(16).padStart(2, '0')).join('')}`;
 }
 
@@ -54,23 +73,23 @@ export function rgbToString({ r, g, b }: Rgb): string {
   return `${r}, ${g}, ${b}`;
 }
 
-function rgbToHsl({ r, g, b }: Rgb) {
+function rgbToHsl({ r, g, b }: Rgb): Hsl {
   const rn = r / 255;
   const gn = g / 255;
   const bn = b / 255;
   const max = Math.max(rn, gn, bn);
   const min = Math.min(rn, gn, bn);
-  const delta = max - min;
+  const d = max - min;
   const l = (max + min) / 2;
 
   let h = 0;
   let s = 0;
 
-  if (delta !== 0) {
-    s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min);
-    if (max === rn) h = ((gn - bn) / delta + (gn < bn ? 6 : 0)) / 6;
-    else if (max === gn) h = ((bn - rn) / delta + 2) / 6;
-    else h = ((rn - gn) / delta + 4) / 6;
+  if (d !== 0) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === rn) h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6;
+    else if (max === gn) h = ((bn - rn) / d + 2) / 6;
+    else h = ((rn - gn) / d + 4) / 6;
   }
 
   return { h: h * 360, s, l };
@@ -86,7 +105,7 @@ function hueToRgb(p: number, q: number, t: number) {
   return p;
 }
 
-function hslToRgb({ h, s, l }: { h: number; s: number; l: number }): Rgb {
+function hslToRgb({ h, s, l }: Hsl): Rgb {
   if (s === 0) {
     const v = l * 255;
     return { r: v, g: v, b: v };
@@ -101,11 +120,7 @@ function hslToRgb({ h, s, l }: { h: number; s: number; l: number }): Rgb {
   };
 }
 
-/** Raises lightness by `amount` (0 to 1), holding hue and saturation. */
-export function lighten(hex: string, amount: number): string {
-  const hsl = rgbToHsl(hexToRgb(hex));
-  return rgbToHex(hslToRgb({ h: hsl.h, s: hsl.s, l: Math.min(1, hsl.l + amount) }));
-}
+const hsl = (h: number, s: number, l: number) => rgbToHex(hslToRgb({ h, s, l }));
 
 /** WCAG 2.1 relative luminance. */
 export function luminance(hex: string): number {
@@ -124,56 +139,137 @@ export function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/** The canvas every variant is measured against. Mirrors --color-ink. */
-export const CANVAS = '#0e0f0c';
+/**
+ * Raises the accent's HSL lightness until it clears `target` against `against`,
+ * holding hue and saturation. Returns the starting colour unchanged if it
+ * already passes.
+ */
+function liftToContrast(base: string, against: string, target: number): string {
+  if (contrast(base, against) >= target) return base;
+  const { h, s } = rgbToHsl(hexToRgb(base));
+  for (let l = 0.05; l <= 1; l += 0.002) {
+    const candidate = hsl(h, s, l);
+    if (contrast(candidate, against) >= target) return candidate;
+  }
+  return '#ffffff';
+}
 
-// ─── The rotation ─────────────────────────────────────────────────────────────
+// ─── Theme construction ───────────────────────────────────────────────────────
+
+/** Canvas lightness. Tuned so the hue is perceptible without lifting the page. */
+const CANVAS_L = 0.052;
+/** Surfaces step up from the canvas; 24px gaps of pure black read as holes. */
+const SURFACE_DL = 0.035;
+const SURFACE_ALT_DL = 0.075;
+const LINE_DL = 0.115;
+
+export function buildTheme(id: string, base: string, saturation = 0.42): Theme {
+  const { h } = rgbToHsl(hexToRgb(base));
+
+  const canvas = hsl(h, saturation, CANVAS_L);
+  const surface = hsl(h, saturation, CANVAS_L + SURFACE_DL);
+  const surfaceAlt = hsl(h, saturation, CANVAS_L + SURFACE_ALT_DL);
+  const line = hsl(h, saturation * 0.7, CANVAS_L + LINE_DL);
+
+  // Text is held at a faint tint of the hue. A saturated ramp cannot reach the
+  // luminance the display type needs without clipping.
+  const textPrimary = hsl(h, 0.06, 0.9);
+  const textBody = hsl(h, 0.12, 0.72);
+  // Verified against surfaceAlt, the lightest surface a caption can land on.
+  const textMute = hsl(h, 0.16, 0.62);
+
+  const accentInk = liftToContrast(base, canvas, 7);
+
+  return {
+    id,
+    canvas,
+    surface,
+    surfaceAlt,
+    line,
+    lineStrong: accentInk,
+    textPrimary,
+    textBody,
+    textMute,
+    accentInk,
+    accentBase: base,
+  };
+}
 
 /**
- * Rotation order. A random entry is picked on every page load, so the accent
- * changes on every refresh. Nothing is persisted to storage, on purpose.
+ * The rotation. A random entry is picked on every page load, so the theme
+ * changes on every refresh. Nothing is written to storage, on purpose.
  */
-export const PALETTE: readonly PaletteEntry[] = [
-  { id: 'ember', base: '#480607', ink: '#F47577' },
-  { id: 'ultraviolet', base: '#201030', ink: '#B28CD9' },
-  { id: 'rose', base: '#ED7A9B', ink: '#ED7A9B' },
-  { id: 'lagoon', base: '#004958', ink: '#00ABCE' },
-  { id: 'amber', base: '#C46210', ink: '#ED7F22' },
+export const THEMES: readonly Theme[] = [
+  buildTheme('ember', '#480607'),
+  buildTheme('ultraviolet', '#201030'),
+  buildTheme('rose', '#ED7A9B', 0.3),
+  buildTheme('lagoon', '#004958'),
+  buildTheme('amber', '#C46210'),
+  buildTheme('lime', '#9fe870', 0.34),
 ] as const;
 
-export function pickPalette(): PaletteEntry {
-  return PALETTE[Math.floor(Math.random() * PALETTE.length)];
+/** The default in src/index.css. Must match a THEMES entry exactly. */
+export const DEFAULT_THEME = THEMES[THEMES.length - 1];
+
+export function pickTheme(): Theme {
+  return THEMES[Math.floor(Math.random() * THEMES.length)];
 }
 
-/** Paints the active entry onto the document so every token follows. */
-export function applyPalette(entry: PaletteEntry): void {
+/** Paints the active theme onto the document so every token follows. */
+export function applyTheme(theme: Theme): void {
   const root = document.documentElement;
-  const base = hexToRgb(entry.base);
-  const ink = hexToRgb(entry.ink);
+  const set = (name: string, value: string) => root.style.setProperty(name, value);
 
-  root.style.setProperty('--color-primary', entry.ink);
-  root.style.setProperty('--color-primary-base', entry.base);
-  root.style.setProperty('--color-primary-rgb', rgbToString(ink));
-  root.style.setProperty('--color-primary-base-rgb', rgbToString(base));
-  root.style.setProperty('--color-primary-active', lighten(entry.ink, 0.1));
-  root.style.setProperty('--color-primary-pale', lighten(entry.ink, 0.32));
-  root.dataset.accent = entry.id;
+  set('--color-ink', theme.canvas);
+  set('--color-ink-deep', theme.surface);
+  set('--color-ink-lift', theme.surfaceAlt);
+  set('--color-ink-line', theme.line);
+  set('--color-line-strong', theme.lineStrong);
+
+  set('--color-canvas-soft', theme.textPrimary);
+  set('--color-body', theme.textBody);
+  set('--color-mute', theme.textMute);
+
+  set('--color-primary', theme.accentInk);
+  set('--color-primary-base', theme.accentBase);
+  set('--color-primary-rgb', rgbToString(hexToRgb(theme.accentInk)));
+  set('--color-primary-base-rgb', rgbToString(hexToRgb(theme.accentBase)));
+
+  // Hover lifts the fill. Derived from the accent, not from white, so the
+  // relationship survives a hue rotation.
+  const { h, s } = rgbToHsl(hexToRgb(theme.accentInk));
+  set('--color-primary-active', hsl(h, s, Math.min(1, rgbToHsl(hexToRgb(theme.accentInk)).l + 0.09)));
+
+  root.dataset.theme = theme.id;
 }
 
 /**
- * Guards the one invariant the rotation depends on: a label on a primary fill
- * must clear 4.5:1. Runs once per load, warns loudly if an entry regresses.
+ * Re-checks the invariants the theme depends on. Runs once per load and warns
+ * loudly, so a future edit to the ramp cannot silently ship unreadable text.
  */
-export function verifyPalette(entries: readonly PaletteEntry[] = PALETTE): void {
-  for (const entry of entries) {
-    const onCanvas = contrast(entry.ink, CANVAS);
-    const asLabel = contrast(entry.ink, CANVAS);
+export function verifyTheme(themes: readonly Theme[] = THEMES): void {
+  const failures: string[] = [];
 
-    if (onCanvas < 4.5 || asLabel < 4.5) {
-      console.warn(
-        `[palette] ${entry.id}: ${entry.ink} fails contrast ` +
-          `(canvas ${onCanvas.toFixed(2)}:1, label ${asLabel.toFixed(2)}:1).`,
-      );
+  for (const theme of themes) {
+    const checks: [string, string, string, number][] = [
+      ['textPrimary', theme.textPrimary, theme.canvas, 7],
+      ['textBody', theme.textBody, theme.canvas, 4.5],
+      // Captions sit on cards, so surfaceAlt is the honest floor.
+      ['textMute', theme.textMute, theme.surfaceAlt, 4.5],
+      ['accentInk', theme.accentInk, theme.canvas, 7],
+      // A solid accent fill labelled with the canvas.
+      ['labelOnAccent', theme.canvas, theme.accentInk, 4.5],
+    ];
+
+    for (const [name, fg, bg, floor] of checks) {
+      const ratio = contrast(fg, bg);
+      if (ratio < floor) {
+        failures.push(`${theme.id}/${name} ${ratio.toFixed(2)}:1 < ${floor}:1`);
+      }
     }
+  }
+
+  if (failures.length > 0) {
+    console.warn('[theme] contrast failures:\n' + failures.map((f) => `  ${f}`).join('\n'));
   }
 }

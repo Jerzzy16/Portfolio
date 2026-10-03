@@ -1,6 +1,6 @@
 import { ArrowUpRight } from '@phosphor-icons/react';
 
-import { projects, type ProjectSpan, type ProjectStatus } from '@/data/profile';
+import { projects, queries, type ProjectSpan, type ProjectStatus } from '@/data/profile';
 import Reveal from '@/components/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 
@@ -24,6 +24,7 @@ export default function Projects() {
         <Reveal>
           <SectionHeader
             title="Projects"
+            query={queries.projects}
             note="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
           />
         </Reveal>

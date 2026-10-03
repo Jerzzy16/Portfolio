@@ -43,10 +43,8 @@ export function Reveal({
   );
 }
 
-/**
- * Tracks whether the page has scrolled past the header, using an
- * IntersectionObserver sentinel. Never a scroll listener.
- */
+/** Tracks whether the page has scrolled past the header, using an
+ *  IntersectionObserver sentinel. Never a scroll listener. */
 export function useScrolledPastHeader(offset = 12): boolean {
   const [scrolled, setScrolled] = useState(false);
 
@@ -66,7 +64,7 @@ export function useScrolledPastHeader(offset = 12): boolean {
   return scrolled;
 }
 
-/** Locks body scroll while the mobile sheet is open. */
+/** Locks body scroll while the mobile drawer is open. */
 export function useScrollLock(locked: boolean): void {
   useEffect(() => {
     if (!locked) return;
@@ -91,11 +89,6 @@ export function usePrefersReducedMotion(): boolean {
   }, []);
 
   return reduce;
-}
-
-/** Fixed overlay layer helper. Kept here so z-index stays in one file. */
-export function overlayStyle(z: 'header' | 'sheet'): CSSVars {
-  return { zIndex: `var(--z-${z})` };
 }
 
 export default Reveal;

@@ -7,13 +7,13 @@ import '@fontsource-variable/geist-mono';
 import '@/index.css';
 
 import App from '@/App';
-import { applyPalette, pickPalette, verifyPalette } from '@/lib/palette';
+import { applyTheme, pickTheme, verifyTheme } from '@/lib/palette';
 
-// The accent rotates on every page load. Nothing is written to storage, so a
-// refresh always lands on a different hue. Paint before first render so the
-// page never flashes the default lime.
-applyPalette(pickPalette());
-verifyPalette();
+// The theme rotates on every page load. Nothing is written to storage, so a
+// refresh always lands on a different hue, canvas included. Painted before the
+// first render so the page never flashes the default lime.
+applyTheme(pickTheme());
+verifyTheme();
 
 const container = document.getElementById('root');
 

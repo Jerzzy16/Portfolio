@@ -1,13 +1,64 @@
-import type { CSSVars } from '@/components/Reveal';
-import SchemaDiagram from '@/components/SchemaDiagram';
+import { useState } from 'react';
+
 import { person, schemaLabel } from '@/data/profile';
+import SchemaDiagram from '@/components/SchemaDiagram';
+import KineticGrid from '@/components/ui/kinetic-grid';
+import type { Roll } from '@/schema';
+import type { CSSVars } from '@/components/Reveal';
+
+const ROLLS: readonly Roll[] = [0, 1, 2, 3];
+
+/**
+ * The vector field. Per the brief it fills this container and stops where the
+ * projects section begins, so the hero reads as a lit panel that the page
+ * emerges from rather than as a texture laid over everything.
+ *
+ * Two stacked layers do the dissolving:
+ *   1. an accent wash, strongest at the top of the page, gone by the fold
+ *   2. the canvas grid, masked to a hard top edge and a soft bottom edge
+ *
+ * The accent is read from --color-primary-rgb at paint time, so both follow the
+ * per-load theme rotation with no extra wiring.
+ */
+function VectorField() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(to bottom, rgb(var(--color-primary-rgb) / 0.14) 0%, rgb(var(--color-primary-rgb) / 0.05) 45%, transparent 88%)',
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          maskImage: 'linear-gradient(to bottom, #000 0%, #000 46%, transparent 96%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 46%, transparent 96%)',
+        }}
+      >
+        <KineticGrid cellSize={54} influenceRadius={250} className="size-full" />
+      </div>
+    </div>
+  );
+}
 
 export default function Hero() {
+  // Re-rolled on every page load. Frozen for the lifetime of the page so the
+  // connectors are not re-routed while the reader is looking at them.
+  const [roll] = useState<Roll>(() => ROLLS[Math.floor(Math.random() * ROLLS.length)]);
+
   return (
-    <section id="top" className="relative pt-28 pb-16 md:pt-24 md:pb-24">
-      <div className="container-page">
-        {/* Eyebrow. The only one on the page. */}
-        <p className="rise tech-label text-center" style={{ animationDelay: '0ms' } as CSSVars}>
+    <section id="top" className="relative isolate pt-32 pb-16 md:pt-24 md:pb-24">
+      <VectorField />
+
+      <div className="container-page relative z-10">
+        {/* Eyebrow. The only one on the page. Hidden on mobile, where the
+            header already carries the schema label directly above this. */}
+        <p
+          className="rise tech-label hidden text-center md:block"
+          style={{ animationDelay: '0ms' } as CSSVars}
+        >
           <span className="text-canvas-soft">{schemaLabel.name}</span>
           <span aria-hidden="true" className="mx-2 text-ink-line">
             /
@@ -29,8 +80,20 @@ export default function Hero() {
           {person.intro}
         </p>
 
-        <div className="rise mt-16 md:mt-24" style={{ animationDelay: '280ms' } as CSSVars}>
-          <SchemaDiagram />
+        <div
+          className="rise mt-9 flex flex-wrap items-center justify-center gap-3"
+          style={{ animationDelay: '210ms' } as CSSVars}
+        >
+          <a href="#projects" className="action action-primary">
+            Projects
+          </a>
+          <a href="#contact" className="action action-ghost">
+            Contact
+          </a>
+        </div>
+
+        <div className="rise mt-14 md:mt-20" style={{ animationDelay: '280ms' } as CSSVars}>
+          <SchemaDiagram roll={roll} />
         </div>
       </div>
     </section>

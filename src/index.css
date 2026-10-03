@@ -7,33 +7,31 @@
    so they are re-stepped here. The brand accent is unchanged.
    ========================================================================= */
 @theme {
-  /* Surfaces. Page Theme Lock: the whole page lives in the ink family. */
-  --color-ink: #0e0f0c;
-  --color-ink-deep: #121310;
-  --color-ink-lift: #1a1c16;
-  --color-ink-line: #23251e;
+  /* Surfaces. These are NOT static: src/lib/palette.ts rewrites the whole neutral
+     ramp at load so the canvas reads as a dark tint of the active hue. The
+     values below are the `lime` theme, which is also the default before the
+     script runs, so first paint never flashes a mismatched background. */
+  --color-ink: #0c1209;
+  --color-ink-deep: #151e0f;
+  --color-ink-lift: #1e2b15;
+  --color-ink-line: #283520;
+  --color-line-strong: #9fe870;
 
-  /* Brand accent. Overwritten at runtime by src/lib/palette.ts, which picks one
-     of five hues per page load. --color-primary is the legible variant, so text
-     and solid fills are accessible for every entry in the rotation. */
+  /* Brand accent. The rotation overwrites these too. accentInk is the legible
+     variant; accentBase is the supplied hex for canvas strokes and glows. */
   --color-primary: #9fe870;
   --color-primary-base: #9fe870;
   --color-primary-rgb: 159, 232, 112;
   --color-primary-base-rgb: 159, 232, 112;
   --color-primary-active: #b6f18d;
-  --color-primary-neutral: #c5edab;
-  --color-primary-pale: #e2f6d5;
 
   /* Text. */
-  --color-canvas: #ffffff;
-  --color-canvas-soft: #e8ebe6;
-  --color-body: #a9aea5;
-  --color-mute: #8b9086;
+  --color-canvas-soft: #e5e7e4;
+  --color-body: #b6c0af;
+  --color-mute: #9bae8f;
 
-  /* Semantic. */
+  /* Semantic. Verified against surfaceAlt on every theme in the rotation. */
   --color-positive: #2ead4b;
-  --color-warning: #ffd11a;
-  --color-negative: #d03238;
 
   /* Type. Manrope 800 stands in for proprietary Wise Sans 900. */
   --font-display: 'Manrope Variable', 'Segoe UI', sans-serif;
@@ -58,13 +56,11 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* z-index scale. Systemic layers only. Header sits over the mobile sheet so
-   the close button is always reachable. The header's own vector field is a
-   child layer at z-0 with the nav at z-10, so it needs no token. */
 @layer base {
   :root {
-    --z-sheet: 40;
-    --z-header: 50;
+    /* Reserved for a future overlay above the header. The header itself uses
+       Tailwind's z-50 directly, since it is the only fixed layer. */
+    --z-overlay: 60;
   }
 
   * {
@@ -128,40 +124,7 @@
     position: relative;
     border: 1px solid var(--color-ink-line);
     border-radius: var(--radius-panel);
-    background-color: color-mix(in oklab, var(--color-ink-deep) 88%, transparent);
-  }
-
-  /* Corner tick marks, as in the schema reference. */
-  .panel::before,
-  .panel::after {
-    content: '';
-    position: absolute;
-    width: 7px;
-    height: 7px;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 200ms var(--ease-out-ui);
-  }
-
-  .panel::before {
-    top: -1px;
-    left: -1px;
-    border-top: 1px solid var(--color-primary);
-    border-left: 1px solid var(--color-primary);
-  }
-
-  .panel::after {
-    right: -1px;
-    bottom: -1px;
-    border-right: 1px solid var(--color-primary);
-    border-bottom: 1px solid var(--color-primary);
-  }
-
-  .panel:hover::before,
-  .panel:hover::after,
-  .panel:focus-within::before,
-  .panel:focus-within::after {
-    opacity: 1;
+    background-color: var(--color-ink-deep);
   }
 
   /* Pill action. The one interactive shape on the page. */
@@ -213,6 +176,265 @@
     letter-spacing: 0.02em;
     color: var(--color-mute);
   }
+
+  /*
+    Primary nav. Desktop only: mobile uses the drawer, so the desktop scale is
+    the only one that matters here.
+  */
+  .nav-link {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    color: var(--color-body);
+    white-space: nowrap;
+    transition: color 200ms var(--ease-out-ui);
+  }
+
+  .nav-link:hover {
+    color: var(--color-primary);
+  }
+
+  .nav-rule {
+    display: block;
+    width: 1px;
+    height: 12px;
+    margin-inline: 20px;
+    background-color: var(--color-ink-line);
+  }
+
+  /* ── Schema stage ──────────────────────────────────────────────────────────
+     A fixed 1120x680 coordinate space, scaled to fit. Cards are absolutely
+     positioned from the authored slots, so the connectors and the cards can
+     never disagree about where anything is. */
+
+  .diagram-wrap {
+    width: 100%;
+  }
+
+  .diagram-frame {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .diagram-stage {
+    position: relative;
+    width: 1120px;
+    height: 680px;
+    transform-origin: top left;
+  }
+
+  .diagram-svg {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+  }
+
+  .diagram-note {
+    margin-top: 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    color: var(--color-mute);
+  }
+
+  /* Corner crosshairs. Outside the border, so cards never use overflow-hidden. */
+  .corner {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    pointer-events: none;
+    opacity: 0.5;
+    transition: opacity 200ms var(--ease-out-ui);
+  }
+
+  .corner.tl {
+    top: -5px;
+    left: -5px;
+    border-top: 1px solid var(--color-primary);
+    border-left: 1px solid var(--color-primary);
+  }
+
+  .corner.tr {
+    top: -5px;
+    right: -5px;
+    border-top: 1px solid var(--color-primary);
+    border-right: 1px solid var(--color-primary);
+  }
+
+  .corner.bl {
+    bottom: -5px;
+    left: -5px;
+    border-bottom: 1px solid var(--color-primary);
+    border-left: 1px solid var(--color-primary);
+  }
+
+  .corner.br {
+    right: -5px;
+    bottom: -5px;
+    border-right: 1px solid var(--color-primary);
+    border-bottom: 1px solid var(--color-primary);
+  }
+
+  .hoverable:hover .corner,
+  .hoverable:focus-visible .corner {
+    opacity: 1;
+  }
+
+  /* Card chrome. Sharp by the documented radius rule. */
+  .card.blueprint {
+    position: absolute;
+    border: 1px solid var(--color-ink-line);
+    border-radius: var(--radius-panel);
+    background-color: var(--color-ink-deep);
+    opacity: 0;
+    animation: rise 620ms var(--ease-out-expo) forwards;
+  }
+
+  .hoverable {
+    transition: border-color 200ms var(--ease-out-ui), transform 160ms var(--ease-out-ui);
+  }
+
+  .hoverable:hover {
+    border-color: rgb(var(--color-primary-rgb) / 0.6);
+  }
+
+  .hoverable:active {
+    transform: translateY(1px);
+  }
+
+  /* Header row: title left, item count right. */
+  .ent-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-ink-line);
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+  }
+
+  /* The root record is the filled one, so the hub reads at a glance. */
+  .ent-head.person {
+    background-color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+
+  .ent-title {
+    font-family: var(--font-mono);
+    font-size: 0.9375rem;
+    letter-spacing: 0.04em;
+    color: var(--color-canvas-soft);
+  }
+
+  .ent-head.person .ent-title {
+    color: var(--color-ink);
+  }
+
+  .ent-badge {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.35rem;
+    padding: 0 0.4rem;
+    border: 1px solid var(--color-ink-line);
+    border-radius: 2px;
+    color: var(--color-mute);
+    white-space: nowrap;
+  }
+
+  .tag-accent {
+    border-color: rgb(var(--color-primary-rgb) / 0.35);
+    color: var(--color-primary);
+  }
+
+  .ent-head.person .ent-badge {
+    border-color: rgb(0 0 0 / 0.25);
+    color: var(--color-ink);
+  }
+
+  .ent-body {
+    padding: 0.25rem 0;
+  }
+
+  .ent-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.2rem 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  /* Consecutive key rows read as one continuous band. */
+  .ent-row.key {
+    background-color: var(--color-ink-lift);
+  }
+
+  .ent-row.indent {
+    padding-left: 1.5rem;
+  }
+
+  .ent-key {
+    color: var(--color-canvas-soft);
+  }
+
+  .ent-row.key .ent-key {
+    color: var(--color-mute);
+  }
+
+  .ent-val {
+    color: var(--color-mute);
+    text-align: right;
+  }
+
+  .ent-val.accent {
+    color: var(--color-primary);
+  }
+
+/* Connectors.
+     pathLength=1 normalises every run to a 0-1 dash space, so one keyframe
+     handles both a 40px stub and a 900px cross. A dash pattern and a draw-in
+     cannot coexist in one static dasharray, so the keyframe holds a full-length
+     dash while it draws, then settles into the repeating dash pattern. */
+  @keyframes draw-dash {
+    0% {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+    70% {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 0;
+    }
+    100% {
+      stroke-dasharray: 0.018 0.012;
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .ln-sql {
+    fill: none;
+    stroke: var(--color-primary);
+    stroke-opacity: 0.55;
+    stroke-width: 1.5;
+    stroke-linecap: butt;
+    stroke-dasharray: 0.018 0.012;
+    stroke-dashoffset: 0;
+    animation: draw-dash 900ms var(--ease-out-expo) both;
+  }
+
+  .lb-sql {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    fill: var(--color-primary);
+    stroke: var(--color-ink);
+    stroke-width: 5;
+    stroke-linejoin: round;
+    paint-order: stroke;
+    opacity: 0;
+    animation: fade 400ms var(--ease-out-ui) forwards;
+  }
 }
 
 @layer utilities {
@@ -250,30 +472,6 @@
   }
 }
 
-/*
-    pathLength="100" normalises every connector to a 0-100 dash space, so one
-    keyframe animates a 40px elbow and a 900px run identically.
-  */
-@keyframes draw-pct {
-  from {
-    stroke-dashoffset: 100;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes node-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @keyframes fade {
   from {
     opacity: 0;
@@ -291,25 +489,24 @@
   animation: fade 400ms var(--ease-out-ui) both;
 }
 
-.node-in {
-  animation: node-in 400ms var(--ease-out-ui) both;
-}
-
-.draw-pct {
-  stroke-dasharray: 100;
-  animation: draw-pct 900ms var(--ease-out-expo) both;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .rise,
-  .draw-pct,
-  .fade,
-  .node-in {
+  .draw-dash,
+  .fade {
     animation: none !important;
   }
 
-  .draw-pct {
-    stroke-dasharray: none;
+  /* Cards and labels start hidden, so they must be forced visible. */
+  .card.blueprint,
+  .lb-sql {
+    opacity: 1;
+    animation: none !important;
+  }
+
+  .ln-sql {
+    animation: none !important;
+    stroke-dasharray: 0.018 0.012;
+    stroke-dashoffset: 0;
   }
 
   *,

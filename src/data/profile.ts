@@ -15,11 +15,15 @@ export type NavItem = {
 
 export type SchemaBlock = {
   id: string;
-  docs: number;
-  /** 'primary' renders the lime header bar used for the root record. */
+  /** Document count, shown as an "n items" chip. */
+  items: number;
+  /** 'primary' renders the filled header bar used for the root record. */
   variant?: 'primary';
   /** Anchor this block links to. The whole panel is the hit target. */
   href: string;
+  /** Key rows, rendered in the band directly under the header. */
+  keys: readonly (readonly [kind: 'PK' | 'SK', value: string])[];
+  /** Data rows below the key band. */
   fields: readonly (readonly [name: string, type: string])[];
 };
 
@@ -66,7 +70,8 @@ export type ExperienceEntry = {
   role: string;
   company: string;
   period: string;
-  points: readonly string[];
+  /** The NOTES column. */
+  notes: readonly string[];
 };
 
 export type EducationEntry = {
@@ -81,8 +86,6 @@ export type EducationEntry = {
 export const person = {
   // PLACEHOLDER
   name: 'John Teston',
-  /** Nav wordmark. Uppercase mono, kept separate from the display name. */
-  wordmark: 'JOHN_TESTON',
   role: 'Software Engineer',
   tagline: 'Enterprise systems, developer tooling, and games.',
   status: 'open_to_work',
@@ -96,6 +99,18 @@ export const person = {
     linkedin: 'https://linkedin.com/in/username',
     email: 'hello@example.com',
   },
+} as const;
+
+/**
+ * One query line per section. This is the technical motif from the reference,
+ * and it doubles as a plain statement of what each section actually holds.
+ */
+export const queries = {
+  projects: 'SELECT * FROM projects ORDER BY year DESC;',
+  skills: 'SELECT name, category FROM skills ORDER BY category;',
+  education: 'SELECT * FROM education ORDER BY period DESC;',
+  experience: 'SELECT * FROM experience ORDER BY period DESC;',
+  contact: 'SELECT github, linkedin, email FROM contact;',
 } as const;
 
 export const nav: readonly NavItem[] = [
@@ -112,75 +127,90 @@ export const schemaLabel = {
   rev: 'rev 9.8.14',
 } as const;
 
-/** Rows rendered inside the hero schema blocks, mirroring the reference diagram. */
+/** The primary key every child collection carries. Change it in one place. */
+export const schemaHandle = 'PERSON#john';
+
+/** Rows rendered inside the hero schema blocks, mirroring the reference diagram.
+ *  The person handle is the primary key every child collection carries. */
 export const schemaBlocks: readonly SchemaBlock[] = [
   {
     id: 'db.person',
-    docs: 1,
+    items: 1,
     variant: 'primary',
     href: '#top',
+    keys: [['PK', schemaHandle]],
     fields: [
-      ['_id', 'ObjectId'],
-      ['name', '"John Teston"'],
-      ['role', '"SWE & Game Designer"'],
-      ['status', '"open_to_work"'],
+      ['name', 'S'],
+      ['status', 'S'],
+    ],
+  },
+  {
+    id: 'db.contact',
+    // One contact record per person, so one row. It previously read "3 items"
+    // because github, linkedin and email were counted as rows when they are
+    // columns of a single row, and it carried no person_id at all, which meant
+    // the relationship to db.person did not exist.
+    items: 1,
+    href: '#contact',
+    keys: [['PK', schemaHandle]],
+    fields: [
+      ['github', 'S'],
+      ['linkedin', 'S'],
+      ['email', 'S'],
     ],
   },
   {
     id: 'db.experience',
-    docs: 4,
+    items: 4,
     href: '#experience',
+    keys: [
+      ['PK', schemaHandle],
+      ['SK', 'EXP#001'],
+    ],
     fields: [
-      ['person_id', 'ref'],
-      ['role', 'String'],
-      ['company', 'String'],
-      ['period', '{from,to}'],
+      ['role', 'S'],
+      ['company', 'S'],
+      ['period', 'M'],
     ],
   },
   {
     id: 'db.skills',
-    docs: 12,
+    items: 12,
     href: '#skills',
+    keys: [
+      ['PK', schemaHandle],
+      ['SK', 'SKILL#001'],
+    ],
     fields: [
-      ['person_id', 'ref'],
-      ['name', 'String'],
-      ['category', 'String'],
+      ['name', 'S'],
+      ['category', 'S'],
     ],
   },
   {
     id: 'db.projects',
-    docs: 5,
+    items: 5,
     href: '#projects',
+    keys: [
+      ['PK', schemaHandle],
+      ['SK', 'PROJ#001'],
+    ],
     fields: [
-      ['person_id', 'ref'],
-      ['title', 'String'],
-      ['stack', '[String]'],
-      ['status', 'String'],
+      ['title', 'S'],
+      ['stack', 'SS'],
+      ['status', 'S'],
     ],
   },
   {
     id: 'db.education',
-    docs: 3,
+    items: 3,
     href: '#education',
-    fields: [
-      ['person_id', 'ref'],
-      ['degree', 'String'],
-      ['school', 'String'],
+    keys: [
+      ['PK', schemaHandle],
+      ['SK', 'EDU#001'],
     ],
-  },
-  {
-    // One contact record per person, so the count is 1. It previously read
-    // "3 docs" because github, linkedin and email were counted as rows when
-    // they are columns of a single row, and it carried no person_id at all,
-    // which meant the relationship to db.person did not exist.
-    id: 'db.contact',
-    docs: 1,
-    href: '#contact',
     fields: [
-      ['person_id', 'ref'],
-      ['github', 'String'],
-      ['linkedin', 'String'],
-      ['email', 'String'],
+      ['degree', 'S'],
+      ['school', 'S'],
     ],
   },
 ];
@@ -310,7 +340,7 @@ export const experience: readonly ExperienceEntry[] = [
     role: 'Senior Software Engineer',
     company: 'Kestrel Logistics',
     period: '2024 - Present',
-    points: [
+    notes: [
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.',
       'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.',
     ],
@@ -319,7 +349,7 @@ export const experience: readonly ExperienceEntry[] = [
     role: 'Software Engineer',
     company: 'Bright Harbor Health',
     period: '2022 - 2024',
-    points: [
+    notes: [
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.',
       'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
     ],
@@ -328,7 +358,7 @@ export const experience: readonly ExperienceEntry[] = [
     role: 'Backend Developer',
     company: 'Corvus Analytics',
     period: '2020 - 2022',
-    points: [
+    notes: [
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.',
       'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
     ],
@@ -337,7 +367,7 @@ export const experience: readonly ExperienceEntry[] = [
     role: 'Software Engineering Intern',
     company: 'Tidewell Interactive',
     period: '2019 - 2020',
-    points: [
+    notes: [
       'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna.',
     ],
   },
