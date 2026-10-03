@@ -1,0 +1,311 @@
+@import 'tailwindcss';
+
+/* ============================================================================
+   TOKENS
+   Palette lifted from DESIGN.md (Wise kit). Values re-calibrated for a locked
+   dark theme: DESIGN.md's body/mute (#454745 / #868685) fail contrast on ink,
+   so they are re-stepped here. The brand accent is unchanged.
+   ========================================================================= */
+@theme {
+  /* Surfaces. Page Theme Lock: the whole page lives in the ink family. */
+  --color-ink: #0e0f0c;
+  --color-ink-deep: #121310;
+  --color-ink-lift: #1a1c16;
+  --color-ink-line: #23251e;
+
+  /* Brand accent. One accent, whole page. */
+  --color-primary: #9fe870;
+  --color-primary-active: #cdffad;
+  --color-primary-neutral: #c5edab;
+  --color-primary-pale: #e2f6d5;
+
+  /* Text. */
+  --color-canvas: #ffffff;
+  --color-canvas-soft: #e8ebe6;
+  --color-body: #a9aea5;
+  --color-mute: #8b9086;
+
+  /* Semantic. */
+  --color-positive: #2ead4b;
+  --color-warning: #ffd11a;
+  --color-negative: #d03238;
+
+  /* Type. Manrope 800 stands in for proprietary Wise Sans 900. */
+  --font-display: 'Manrope Variable', 'Segoe UI', sans-serif;
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'Cascadia Mono', monospace;
+
+  --text-hero: clamp(2.75rem, 9vw, 7.5rem);
+  --text-display: clamp(2rem, 5.2vw, 3.75rem);
+  --text-section: clamp(1.5rem, 3vw, 2.25rem);
+
+  /*
+    Shape Consistency Lock. Documented two-tier rule:
+      data surfaces (panels, tables, tiles) = sharp 3px
+      actions (buttons, pills)            = full pill
+  */
+  --radius-panel: 3px;
+  --radius-action: 9999px;
+
+  /* Motion. Strong ease-out for entries, drawer curve for the mobile sheet. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-ui: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* z-index scale. Systemic layers only. The grid field sits under content, the
+   header sits over the mobile sheet so the close button is always reachable. */
+@layer base {
+  :root {
+    --z-grid: 0;
+    --z-sheet: 40;
+    --z-header: 50;
+  }
+
+  * {
+    border-color: var(--color-ink-line);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-ink);
+    color: var(--color-canvas-soft);
+    font-family: var(--font-sans);
+    font-feature-settings: 'calt';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: var(--color-primary);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+
+  /*
+    The blueprint grid is no longer painted here. KineticGrid owns it, so the
+    static field and the interactive field can never moire against each other.
+  */
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+@layer components {
+  /* Layout container. 1200px per DESIGN.md grid. */
+  .container-page {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .container-page {
+      padding-inline: 2rem;
+    }
+  }
+
+  /* Blueprint data panel. Sharp by rule, hairline by rule. */
+  .panel {
+    position: relative;
+    border: 1px solid var(--color-ink-line);
+    border-radius: var(--radius-panel);
+    background-color: color-mix(in oklab, var(--color-ink-deep) 88%, transparent);
+  }
+
+  /* Corner tick marks, as in the schema reference. */
+  .panel::before,
+  .panel::after {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 200ms var(--ease-out-ui);
+  }
+
+  .panel::before {
+    top: -1px;
+    left: -1px;
+    border-top: 1px solid var(--color-primary);
+    border-left: 1px solid var(--color-primary);
+  }
+
+  .panel::after {
+    right: -1px;
+    bottom: -1px;
+    border-right: 1px solid var(--color-primary);
+    border-bottom: 1px solid var(--color-primary);
+  }
+
+  .panel:hover::before,
+  .panel:hover::after,
+  .panel:focus-within::before,
+  .panel:focus-within::after {
+    opacity: 1;
+  }
+
+  /* Pill action. The one interactive shape on the page. */
+  .action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: var(--radius-action);
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.5rem;
+    white-space: nowrap;
+    transition:
+      transform 160ms var(--ease-out-ui),
+      background-color 200ms var(--ease-out-ui),
+      color 200ms var(--ease-out-ui),
+      border-color 200ms var(--ease-out-ui);
+  }
+
+  .action:active {
+    transform: scale(0.97);
+  }
+
+  .action-primary {
+    background-color: var(--color-primary);
+    color: var(--color-ink);
+  }
+
+  .action-primary:hover {
+    background-color: var(--color-primary-active);
+  }
+
+  .action-ghost {
+    border: 1px solid var(--color-ink-line);
+    color: var(--color-canvas-soft);
+  }
+
+  .action-ghost:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  /* Technical micro-label. Used inside data panels, never as a section eyebrow. */
+  .tech-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    letter-spacing: 0.02em;
+    color: var(--color-mute);
+  }
+}
+
+@layer utilities {
+  .text-display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+  }
+
+  .text-section-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+}
+
+/* ============================================================================
+   MOTION
+   Purpose per animation:
+     rise       -> storytelling. The hero assembles in reading order.
+     draw       -> storytelling. Schema connectors trace themselves left to right.
+     node       -> state indication. Timeline nodes mark a real position in time.
+   All of it collapses under prefers-reduced-motion.
+   ========================================================================= */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: var(--draw-len, 400);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes node-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.rise {
+  animation: rise 700ms var(--ease-out-expo) both;
+}
+
+.fade {
+  animation: fade 400ms var(--ease-out-ui) both;
+}
+
+.node-in {
+  animation: node-in 400ms var(--ease-out-ui) both;
+}
+
+.draw {
+  stroke-dasharray: var(--draw-len, 400);
+  animation: draw 1100ms var(--ease-out-expo) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .draw,
+  .fade,
+  .node-in {
+    animation: none !important;
+  }
+
+  .draw {
+    stroke-dasharray: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+  }
+}
