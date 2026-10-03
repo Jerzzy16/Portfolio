@@ -218,31 +218,29 @@ export type DiagramLayout = {
 };
 
 /**
- * The single entry point the diagram component renders from. Both modes emit the
- * same shape, so the component has one render path and no layout branch of its
- * own: the wide mode uses the authored slots and the elbow router, the portrait
- * mode solves a vertical stack and fans the edges off stepped rails.
+ * The single entry point the diagram component renders from.
+ *
+ * One layout at every viewport: the authored wide arrangement, scaled to fit
+ * its container. The stage keeps its own coordinate space and is transformed
+ * rather than reflowed, so the scatter, the slots and the connectors are the
+ * same geometry on a phone as on a desktop and the diagram reads identically,
+ * just smaller. Nothing is measured from the DOM to work out where a card sits;
+ * a Roll picks which entity sits in which of six authored slots, so positions
+ * are known up front and the connectors cannot drift out of register.
+ *
+ * Card height is the one thing that must be measured, because it depends on the
+ * webfont landing. routeDiagram takes those heights and anchors the connectors
+ * to the real boxes.
  */
 export function layoutDiagram(
   diagram: Diagram,
   heights: Record<string, number>,
-  mode: 'wide' | 'portrait',
 ): DiagramLayout {
-  if (mode === 'wide') {
-    return {
-      stageW: STAGE_W,
-      stageH: STAGE_H,
-      slots: slotsOf(diagram),
-      ...routeDiagram(diagram, heights),
-    };
-  }
-
-  const { slots, rails, stageH } = portraitSlots(diagram, heights);
   return {
-    stageW: PORTRAIT_W,
-    stageH,
-    slots,
-    ...routeSpine(diagram, heights, slots, rails),
+    stageW: STAGE_W,
+    stageH: STAGE_H,
+    slots: slotsOf(diagram),
+    ...routeDiagram(diagram, heights),
   };
 }
 
@@ -275,128 +273,3 @@ export function routeDiagram(
   return { connectors, labels };
 }
 
-// ─── Portrait layout ──────────────────────────────────────────────────────────
-
-/*
-  The portrait arrangement, for viewports too narrow to carry the wide stage.
-
-  The wide stage cannot simply be scaled down: at 375px the factor lands near
-  0.29 and every label drops to roughly 4px. So the narrow layout is not the
-  wide one shrunk, it is the same diagram authored for a vertical viewport —
-  identical card chrome, corner crosshairs, dashed accent connectors and
-  cardinality glyphs, laid out top to bottom.
-
-  The stage is 340px wide against a 220px card, which scales to about 0.99 at
-  375px, so the type renders at its authored size.
- */
-export const PORTRAIT_W = 340;
-const PORTRAIT_CARD_W = 220;
-const PORTRAIT_ROOT_X = 60;
-/** Alternating offset, so the stack reads scattered rather than gridded. */
-const PORTRAIT_STAGGER = 120;
-
-/** Root underside to the shallowest rail. */
-const BUS_GAP = 44;
-/**
- * Rails are stepped rather than shared. A single shared rail would have the
- * edges drawn over each other wherever their horizontal runs coincide, which
- * reads as a smudged line; stepping keeps every run on its own depth.
- */
-const BUS_STEP = 14;
-/** Deepest rail down to the first card. Wider than CARD_GAP so the fan reads. */
-const STACK_GAP = 36;
-/** Card to card. */
-const CARD_GAP = 26;
-const PORTRAIT_PAD_BOTTOM = 24;
-
-/**
- * Slots for the portrait stack. Unlike the wide layout these cannot be authored
- * constants: a top-to-bottom stack has no fixed height, because each card's top
- * depends on the height of the one above it, and those heights are only known
- * once the webfont has landed. So the geometry is solved per measurement, the
- * same way the connectors are.
- */
-function portraitSlots(
-  diagram: Diagram,
-  heights: Record<string, number>,
-): { slots: Record<string, Slot>; rails: number[]; stageH: number } {
-  const slots: Record<string, Slot> = {};
-  const rootH = heights[diagram.person.id] ?? ESTIMATED_H;
-
-  slots[diagram.person.id] = { l: PORTRAIT_ROOT_X, t: 0, w: PORTRAIT_CARD_W };
-
-  const root = boxOf(slots[diagram.person.id], rootH);
-  const rails = diagram.satellites.map((_, i) => root.b + BUS_GAP + i * BUS_STEP);
-
-  let y = (rails[rails.length - 1] ?? root.b) + STACK_GAP;
-  diagram.satellites.forEach((sat, index) => {
-    const h = heights[sat.id] ?? ESTIMATED_H;
-    slots[sat.id] = {
-      l: index % 2 === 0 ? 0 : PORTRAIT_STAGGER,
-      t: y,
-      w: PORTRAIT_CARD_W,
-    };
-    // Advance past this card *and* the gap below it. Stepping by height alone
-    // would butt every card flush against the next one.
-    y += h + CARD_GAP;
-  });
-
-  // y now sits one gap below the last card, so trade that back for the padding.
-  return { slots, rails, stageH: y - CARD_GAP + PORTRAIT_PAD_BOTTOM };
-}
-
-/**
- * `n` anchors spread evenly across [l, r], inset by one fraction each end so no
- * exit sits on the corner of the root card.
- */
-function spread(l: number, r: number, n: number): number[] {
-  return Array.from({ length: n }, (_, i) => l + ((r - l) * (i + 1)) / (n + 1));
-}
-
-/**
- * The portrait router. Every edge leaves the underside of the root at its own
- * anchor, drops to its own rail depth, runs along to the target card's centre,
- * then descends to that card's top edge. Exits are assigned left to right in
- * stack order, which against the alternating stagger keeps the runs from
- * crossing.
- */
-function routeSpine(
-  diagram: Diagram,
-  heights: Record<string, number>,
-  slots: Record<string, Slot>,
-  rails: number[],
-): { connectors: Connector[]; labels: Label[] } {
-  const root = boxFor(diagram.person, slots, heights);
-  const exits = spread(root.l, root.r, diagram.satellites.length);
-  const connectors: Connector[] = [];
-  const labels: Label[] = [];
-
-  diagram.satellites.forEach((sat, index) => {
-    const box = boxFor(sat, slots, heights);
-    const from = exits[index];
-    const rail = rails[index];
-    const base = 0.5 + index * 0.09;
-
-    connectors.push({
-      d: `M${from} ${root.b} V${rail} H${box.cx} V${box.t}`,
-      delay: base,
-    });
-
-    labels.push({
-      x: from,
-      y: (root.b + rail) / 2,
-      text: '1',
-      anchor: 'middle',
-      delay: base + 0.38,
-    });
-    labels.push({
-      x: box.cx,
-      y: box.t - 10,
-      text: farGlyph(sat.id),
-      anchor: 'middle',
-      delay: base + 0.46,
-    });
-  });
-
-  return { connectors, labels };
-}

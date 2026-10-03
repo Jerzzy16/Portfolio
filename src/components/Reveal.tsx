@@ -92,27 +92,6 @@ export function usePrefersReducedMotion(): boolean {
 }
 
 /**
- * Tracks a media query. The initial value is read synchronously from
- * matchMedia rather than set in an effect, so the first paint is already correct
- * and nothing below has to render both branches and hide one.
- */
-export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(query).matches,
-  );
-
-  useEffect(() => {
-    const list = window.matchMedia(query);
-    const onChange = (event: MediaQueryListEvent) => setMatches(event.matches);
-    setMatches(list.matches);
-    list.addEventListener('change', onChange);
-    return () => list.removeEventListener('change', onChange);
-  }, [query]);
-
-  return matches;
-}
-
-/**
  * Tracks whether an element's content overflows it horizontally.
  *
  * Used to decide whether a scroll container needs the accessible plumbing for

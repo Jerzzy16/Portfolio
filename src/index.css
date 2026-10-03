@@ -260,9 +260,8 @@ html {
     overflow: hidden;
   }
 
-/* Stage box. Width and height come from the layout, which differs per mode:
-     authored constants for the wide arrangement, solved from measured card
-     heights for the portrait one. */
+/* Stage box. Fixed 1120x680 coordinate space, scaled to fit its container, so
+     the diagram is identical at every viewport and only its size changes. */
   .diagram-stage {
     position: relative;
     transform-origin: top left;
@@ -334,19 +333,15 @@ html {
     opacity: 1;
   }
 
-/* Card chrome. Sharp by the documented radius rule. */
+/* Card chrome. Sharp by the documented radius rule. Every card is positioned
+     from an authored slot inside the scaled stage. */
   .card.blueprint {
+    position: absolute;
     border: 1px solid var(--color-ink-line);
     border-radius: var(--radius-panel);
     background-color: var(--color-ink-deep);
     opacity: 0;
     animation: rise 620ms var(--ease-out-expo) forwards;
-  }
-
-  /* Every card is taken from a slot. Which slot, and whether those slots are
-     authored constants or solved from measured heights, is the layout's call. */
-  .card.slot {
-    position: absolute;
   }
 
   .hoverable {

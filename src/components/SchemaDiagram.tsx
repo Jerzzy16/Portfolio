@@ -3,10 +3,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { buildDiagram, layoutDiagram, type Ent, type Roll, type Row } from '@/schema';
 import Corners from './Corners';
 import { schemaHandle } from '@/data/profile';
-import { useMediaQuery } from '@/components/Reveal';
-
-/** Matches the `md` breakpoint the layout switches at. */
-const WIDE = '(min-width: 768px)';
 
 function Rows({ rows }: { rows: Row[] }) {
   return (
@@ -27,8 +23,13 @@ function Rows({ rows }: { rows: Row[] }) {
   );
 }
 
+/**
+ * The schema diagram. One layout at every viewport: the authored wide
+ * arrangement inside a fixed 1120x680 stage, scaled to fit its container. The
+ * stage is transformed rather than reflowed, so a phone shows the same scatter
+ * and the same connectors as a desktop, just smaller.
+ */
 export default function SchemaDiagram({ roll }: { roll: Roll }) {
-  const wide = useMediaQuery(WIDE);
   const diagram = useMemo(() => buildDiagram(roll), [roll]);
 
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -55,8 +56,7 @@ export default function SchemaDiagram({ roll }: { roll: Roll }) {
     return () => ro.disconnect();
   }, []);
 
-  // Card heights drive the connector anchors and, in the portrait layout, the
-  // slot positions too, since a vertical stack has no fixed geometry.
+  // Card heights drive the connector anchors, so they are measured after layout.
   useLayoutEffect(() => {
     const measure = () => {
       setHeights((prev) => {
@@ -79,14 +79,12 @@ export default function SchemaDiagram({ roll }: { roll: Roll }) {
     void document.fonts?.ready.then(measure).catch(() => {});
 
     return () => ro.disconnect();
-  }, [diagram, wide]);
+  }, [diagram]);
 
-  const layout = useMemo(
-    () => layoutDiagram(diagram, heights, wide ? 'wide' : 'portrait'),
-    [diagram, heights, wide],
+  const { connectors, labels, slots, stageW, stageH } = useMemo(
+    () => layoutDiagram(diagram, heights),
+    [diagram, heights],
   );
-
-  const { connectors, labels, slots, stageW, stageH } = layout;
 
   // Until the first observation lands, fall back to the authored stage width so
   // the scale is 1 rather than 0.
@@ -108,7 +106,7 @@ export default function SchemaDiagram({ roll }: { roll: Roll }) {
         key={ent.id}
         ref={setBox(ent.id)}
         href={ent.href}
-        className={`card blueprint hoverable ent slot ${isRoot ? 'ent-person' : 'ent-link'}`}
+        className={`card blueprint hoverable ent ${isRoot ? 'ent-person' : 'ent-link'}`}
         style={{
           left: slot.l,
           top: slot.t,
