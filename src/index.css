@@ -69,7 +69,6 @@
 
 html {
     color-scheme: dark;
-    scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
   }
 
@@ -120,16 +119,10 @@ html {
     outline-offset: 3px;
   }
 
-  /*
+/*
     The blueprint grid is no longer painted here. KineticGrid owns it, so the
     static field and the interactive field can never moire against each other.
   */
-
-  @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
-  }
 }
 
 @layer components {
@@ -505,6 +498,36 @@ html {
     letter-spacing: -0.02em;
     line-height: 1.05;
   }
+}
+
+/* ============================================================================
+   LENIS
+   Required by the library. `scroll-behavior: auto !important` on the smoothing
+   state is the load-bearing line: the stylesheet used to set
+   `scroll-behavior: smooth` on html, and leaving any smooth behaviour to the
+   browser fights Lenis for control of the scroll position. The class names are
+   applied by Lenis to <html> itself. `lenis-stopped` is what freezes the page
+   behind the mobile drawer, so nothing has to set body overflow by hand.
+   ========================================================================= */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
 }
 
 /* ============================================================================

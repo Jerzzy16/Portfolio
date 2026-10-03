@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 
+import { getLenis } from '@/lib/smoothScroll';
+
 /** Style object that also accepts CSS custom properties. */
 export type CSSVars = CSSProperties & Record<`--${string}`, string | number>;
 
@@ -70,8 +72,13 @@ export function useScrollLock(locked: boolean): void {
     if (!locked) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // Lenis drives the scroll position, so locking the body's overflow alone
+    // would freeze the native scrollbar while the drawer was still open to
+    // wheel input over the page behind it.
+    getLenis()?.stop();
     return () => {
       document.body.style.overflow = previous;
+      getLenis()?.start();
     };
   }, [locked]);
 }

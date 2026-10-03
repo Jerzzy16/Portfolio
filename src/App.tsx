@@ -6,10 +6,13 @@ import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import Projects from '@/components/Projects';
 import Skills from '@/components/Skills';
+import SmoothScroll from '@/components/SmoothScroll';
 
 export default function App() {
   return (
     <div className="relative min-h-[100dvh]">
+      <SmoothScroll />
+
       {/* First tab stop. The nav sits above the hero, so without this a keyboard
           user walks five links before reaching any content. */}
       <a
