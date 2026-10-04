@@ -49,7 +49,21 @@ export default function Hero() {
   const [roll] = useState<Roll>(() => ROLLS[Math.floor(Math.random() * ROLLS.length)]);
 
   return (
-    <section id="top" className="relative isolate pt-32 pb-12">
+    /*
+      min-h-svh on mobile only, and it is a CLS fix rather than a stylistic
+      flourish. This is a client-rendered app, so #root is empty until React
+      commits at ~2.8s on a throttled phone. At 412x823 the hero used to end at
+      y=665, which left #projects sitting in the initial viewport -- and an
+      element inserted into a painted viewport is scored as a layout shift,
+      worth 0.106 on its own. Filling the screen means the next section starts
+      below the fold and has nothing to displace. Desktop is explicitly opted
+      out: the diagram is authored at 1120x680 and is taller than the viewport
+      there anyway.
+    */
+    <section
+      id="top"
+      className="relative isolate flex min-h-[100svh] flex-col justify-center pt-32 pb-12 md:min-h-0"
+    >
       <VectorField />
 
       <div className="container-page relative z-10">

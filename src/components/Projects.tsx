@@ -11,6 +11,37 @@ const SPAN: Record<ProjectSpan, string> = {
   seven: 'md:col-span-7',
 };
 
+/*
+  What the browser should think it is fetching, in CSS pixels, so it can pick a
+  srcset candidate before layout. Mirrors the spans above: one column on mobile,
+  7 or 5 of 12 from md up, inside container-page's gutters.
+ */
+const SIZES: Record<ProjectSpan, string> = {
+  feature: '(min-width: 768px) 56vw, 92vw',
+  seven: '(min-width: 768px) 56vw, 92vw',
+  third: '(min-width: 768px) 40vw, 92vw',
+};
+
+const SRCSET_WIDTHS = [320, 480, 640, 800, 960, 1200, 1600];
+
+/**
+ * Builds a srcset from the authored Picsum URL. Picsum serves any width for a
+ * seed, so the candidates are derived from the intrinsic size instead of being
+ * hand-maintained next to it in the data file -- the trailing `/<w>/<h>` is the
+ * only part that changes, and the aspect ratio is preserved by scaling both.
+ *
+ * Candidates wider than the intrinsic size are dropped: upscaling costs bytes
+ * and buys nothing, since `object-cover` is already scaling to the box.
+ */
+function responsiveSrcSet(image: string, width: number, height: number): string {
+  const base = image.replace(/\/\d+\/\d+$/, '');
+  const ratio = height / width;
+
+  return SRCSET_WIDTHS.filter((candidate) => candidate <= width)
+    .map((candidate) => `${base}/${candidate}/${Math.round(candidate * ratio)} ${candidate}w`)
+    .join(', ');
+}
+
 const STATUS: Record<ProjectStatus, { label: string; className: string }> = {
   shipped: { label: 'shipped', className: 'border-positive/40 text-positive' },
   in_progress: { label: 'in progress', className: 'border-primary/50 text-primary' },
@@ -46,6 +77,12 @@ export default function Projects() {
                   <div className="relative min-h-[210px] flex-1 overflow-hidden">
                     <img
                       src={project.image}
+                      srcSet={responsiveSrcSet(
+                        project.image,
+                        project.imageWidth,
+                        project.imageHeight,
+                      )}
+                      sizes={SIZES[project.span]}
                       alt=""
                       width={project.imageWidth}
                       height={project.imageHeight}
