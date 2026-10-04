@@ -88,19 +88,19 @@ export type EducationEntry = {
 
 export const person = {
   // PLACEHOLDER
-  name: 'John Teston',
-  role: 'Software Engineer',
-  tagline: 'Enterprise systems, developer tooling, and games.',
+  name: 'JOHN TESTON',
+  role: 'Systems & Software Engineer',
+  tagline: 'To Infinity and Beyond. Reach the stars with code that scales.',
   status: 'open_to_work',
   // PLACEHOLDER. Single address only, no time or weather strip.
-  location: 'Melbourne, Australia',
+  location: 'Providenciales, Turks & Caicos Islands',
   intro:
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer vel sem at augue aliquam fermentum.',
+    'I\'m a tech enthusiast passionate about building, managing, and improving reliable digital solutions. In my professional role, I am responsible for managing IT infrastructure, networks, servers, systems, and the technologies that keep organizations running smoothly.',
   // PLACEHOLDER
   links: {
-    github: 'https://github.com/username',
-    linkedin: 'https://linkedin.com/in/username',
-    email: 'hello@example.com',
+    github: 'https://github.com/Jerzzy16',
+    linkedin: 'https://www.linkedin.com/in/john-teston',
+    email: 'johnjeruel@gmail.com',
   },
 } as const;
 
