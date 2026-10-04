@@ -127,7 +127,7 @@ export const nav: readonly NavItem[] = [
 /** Schema label shown in the hero diagram header. */
 export const schemaLabel = {
   name: 'JOHN_TESTON.SCHEMA',
-  rev: 'rev 9.8.14',
+  rev: 'v1.0.0',
 } as const;
 
 /** The primary key every child collection carries. Change it in one place. */
@@ -314,10 +314,10 @@ export const skillGroups: readonly SkillGroup[] = [
     label: 'Languages',
     items: [
       { name: 'Java', icon: 'openjdk' },
-      { name: 'Kotlin', icon: 'kotlin' },
       { name: 'TypeScript', icon: 'typescript' },
-      { name: 'Go', icon: 'go' },
       { name: 'Python', icon: 'python' },
+      { name: 'Go', icon: 'go' },
+      { name: 'SQL', icon: 'postgresql' },
     ],
   },
   {
@@ -341,7 +341,6 @@ export const skillGroups: readonly SkillGroup[] = [
   {
     label: 'Game engines',
     items: [
-      { name: 'Unity', icon: 'unity' },
       { name: 'Godot', icon: 'godotengine' },
     ],
   },
@@ -356,38 +355,67 @@ export const skillGroups: readonly SkillGroup[] = [
 // PLACEHOLDER
 export const experience: readonly ExperienceEntry[] = [
   {
-    role: 'Senior Software Engineer',
-    company: 'Kestrel Logistics',
-    period: '2024\u00a0\u2013\u00a0Present',
+    role: 'IT Personnel & Systems Engineer',
+    company: 'The Oasis at Grace Bay',
+    period: '2026\u00a0\u2013\u00a0Present',
     notes: [
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.',
-      'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.',
+      'Configure, deploy, and maintain switches, routers, wireless access points, firewalls, and structured cabling with secure design using VLANs, VPNs, and access controls.',
+      'Perform infrastructure audits, asset management, cabling, and Tier 1–3 IT support for staff and operations.',
     ],
   },
   {
     role: 'Software Engineer',
-    company: 'Bright Harbor Health',
-    period: '2022\u00a0\u2013\u00a02024',
+    company: 'Freelance',
+    period: '2023\u00a0\u2013\u00a0Present',
     notes: [
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.',
-      'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.',
+      'Focused on performance optimization, scalability, and maintainable codebases',
+      'Utilized AWS (EC2, S3, IAM, CloudWatch), CI/CD pipelines, and Bash scripts for automation.',
+      'Managed multiple tasks and deadlines efficiently, maintaining productivity and on-time delivery in fast-paced environments.'
     ],
   },
   {
-    role: 'Backend Developer',
-    company: 'Corvus Analytics',
-    period: '2020\u00a0\u2013\u00a02022',
+    role: 'System Administrator',
+    company: 'SBD Apparel',
+    period: '2025\u00a0\u2013\u00a02025',
     notes: [
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.',
-      'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+      'Designed and configured a low-latency LAN connecting PCs, supporting real-time broadcasting during live events without internet dependency.',
+      'Diagnosed and resolved LAN connectivity issues in real time during a live national-level event.',
+      'Set up and maintained a local web server for event workflows.'
     ],
   },
   {
-    role: 'Software Engineering Intern',
-    company: 'Tidewell Interactive',
-    period: '2019\u00a0\u2013\u00a02020',
+    role: 'Information Communication Technology Teacher',
+    company: 'Providence International Academy',
+    period: '2021\u00a0\u2013\u00a02022',
     notes: [
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna.',
+      'Designed and implemented innovative lesson plans integrating educational technology to enhance language acquisition, engagement, and student outcomes.',
+      'Directed classroom instruction and peer collaboration, mentoring students and coordinating with fellow educators to align digital teaching strategies with curriculum objectives.'
+    ],
+  },
+  {
+    role: 'Inventory Clerk',
+    company: 'InterHealth Canada',
+    period: '2019\u00a0\u2013\u00a02019',
+    notes: [
+      'Processed and managed inventory data, ensuring accurate tracking and reporting of medical supplies.',
+    ],
+  },
+  {
+    role: 'Parts and Customer Service Representative',
+    company: 'Butterfield Motors, Ltd.',
+    period: '2019\u00a0\u2013\u00a02019',
+    notes: [
+      'Collaborated cross-functionally with engineering, sales, and customer service teams to analyze customer needs, collect feedback via direct outreach and cold calling, and implement service improvements based on insights.',
+      'Performed detailed vehicle inspections, effectively communicated technical findings to customers, and supported the creation of accurate repair and maintenance plans, resulting in improved client satisfaction and retention.'
+    ],
+  },
+  {
+    role: 'Food Server',
+    company: 'Seven Stars Resort and Spa',
+    period: '2021\u00a0\u2013\u00a02022',
+    notes: [
+      'Enhanced customer satisfaction by anticipating guest needs, resolving concerns proactively, and maintaining a friendly, service-oriented atmosphere.',
+      'Maintained operational efficiency during peak hours through effective multitasking, communication, and time management.'
     ],
   },
 ];
@@ -396,23 +424,16 @@ export const experience: readonly ExperienceEntry[] = [
 export const education: readonly EducationEntry[] = [
   {
     degree: 'B.S. Computer Science',
-    school: 'Northgate University',
-    period: '2016\u00a0\u2013\u00a02020',
+    school: 'Mapua University',
+    period: '2023\u00a0\u2013\u00a0Present',
     detail:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Coursework in distributed systems, compilers, and human-computer interaction.',
-  },
-  {
-    degree: 'Game Development Certificate',
-    school: 'Ironwood Academy',
-    period: '2021',
-    detail:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Intensive program in engine architecture, level design, and technical art.',
+      'Computer Science program with a focus on software development, algorithms, and data structures. Coursework includes advanced programming, database management, and software engineering principles.',
   },
   {
     degree: 'Self-directed study',
     school: 'Independent',
     period: '2022\u00a0\u2013\u00a0Present',
     detail:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ongoing focus on rendering, physics, and developer experience tooling.',
+      'CCNA, HACKER101, and other online courses. Focused on networking, cybersecurity, and software development. Completed various projects to apply theoretical knowledge in practical scenarios.',
   },
 ];

@@ -1,7 +1,7 @@
 import { ArrowRight, EnvelopeSimple } from '@phosphor-icons/react';
 
-import { person, queries } from '@/data/profile';
 import Reveal from '@/components/Reveal';
+import { person, queries } from '@/data/profile';
 
 export default function Contact() {
   return (
@@ -12,12 +12,11 @@ export default function Contact() {
             <p className="tech-label">{queries.contact}</p>
 
             <h2 className="text-section-title mt-5 max-w-[16ch] text-[length:var(--text-display)] text-primary">
-              Lorem ipsum dolor sit amet.
+              CONNECT WITH ME
             </h2>
 
             <p className="mt-6 max-w-[52ch] leading-relaxed text-body">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer vel sem at augue
-              aliquam fermentum. Praesent vel nibh sed sapien ultricies pretium.
+              Feel free to reach out for collaborations, inquiries, or just to say hello. I’m always open to discussing new projects, creative ideas, or opportunities to be part of your visions.
             </p>
 
             <div className="mt-10 flex flex-wrap gap-3">
