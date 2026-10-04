@@ -84,6 +84,10 @@ function inlineCssAndPreloadFonts(): Plugin {
 }
 
 export default defineConfig({
+  // GitHub Pages serves this repo at jerzzy16.github.io/Portfolio/, so the
+  // deploy workflow builds with VITE_BASE=/Portfolio/. Unset locally, which
+  // keeps `vite dev` and `vite preview` on the root path.
+  base: process.env.VITE_BASE ?? '/',
   plugins: [react(), tailwindcss(), inlineCssAndPreloadFonts()],
   resolve: {
     alias: {

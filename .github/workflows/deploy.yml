@@ -1,0 +1,59 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  # Manual re-run, e.g. after flipping the Pages source to GitHub Actions.
+  workflow_dispatch:
+
+# One deploy at a time, newest wins: a rapid series of pushes should not
+# publish a stale build after the current one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Ahead of the build on purpose. `tsc -b` is cheap next to install,
+      # and a type error should fail the run before anything is published.
+      - run: npm run typecheck
+
+      - name: Build for GitHub Pages
+        run: npm run build
+        env:
+          # Pages serves this repo at jerzzy16.github.io/Portfolio/, so every
+          # emitted URL needs the prefix. Local dev leaves this unset and
+          # stays at the root.
+          VITE_BASE: /Portfolio/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
