@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Single-page app: every route is client-rendered from /, so there is nothing
+# to disallow and no crawl budget worth spending on 404s.
+#
+# Add a Sitemap: line once the public URL is confirmed -- it has to be
+# absolute, and this repo does not currently pin `base` in vite.config.ts, so
+# the deployed prefix is not knowable from here.

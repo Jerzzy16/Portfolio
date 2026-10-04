@@ -1,0 +1,19 @@
+# John Teston
+
+Software engineer portfolio: enterprise systems, developer tooling, and games.
+
+Links here are relative to this file, which sits at the site root.
+
+## Sections
+
+- [Projects](/#projects): Settlement Replatform, Internal Tooling CLI, Cargo Tracking Dashboard, Warden, Tidal.
+- [Skills](/#skills): Languages, frameworks, infrastructure, and game engines.
+- [Education](/#education): Computer science, game development certificate, self-directed study.
+- [Experience](/#experience): Four roles across logistics, health, analytics, and interactive agencies.
+- [Contact](/#contact): Email and GitHub.
+
+## Notes
+
+Content is static and lives in `src/data/profile.ts`. There is no backend, no
+tracking, and no third-party origin on the critical path except the Simple
+Icons CDN used for skill glyphs.
