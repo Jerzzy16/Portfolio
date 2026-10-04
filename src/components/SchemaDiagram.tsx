@@ -113,7 +113,6 @@ export default function SchemaDiagram({ roll }: { roll: Roll }) {
           width: slot.w,
           animationDelay: `${ent.delay}s`,
         }}
-        aria-label={`${ent.id}, ${ent.badge}, jump to ${ent.href.slice(1)}`}
       >
         <Corners />
         <div className={`ent-head sql${isRoot ? ' person' : ''}`}>
@@ -123,6 +122,20 @@ export default function SchemaDiagram({ roll }: { roll: Roll }) {
           <span className={`ent-badge${isRoot ? '' : ' tag tag-accent'}`}>{ent.badge}</span>
         </div>
         <Rows rows={ent.rows} />
+        {/*
+          No aria-label on this link, deliberately. The card is a schematic:
+          its rendered text runs to "db.person 1 item PK PERSON#john name S
+          status S", and Label in Name (WCAG 2.5.3) fails any accessible name
+          that does not contain all of it -- so an aria-label summarising the
+          card fights its own visible text no matter how it is worded, which is
+          exactly what voice-control users cannot cope with.
+
+          Letting the name come from the content makes the visible text a prefix
+          of it by construction. The destination still needs saying, since a
+          hash href conveys it poorly on its own, and sr-only text contributes
+          to the accessible name without adding anything to the visible label.
+        */}
+        <span className="sr-only">. Jump to {ent.href.slice(1)}</span>
       </a>
     );
   };
