@@ -2,7 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover lets the hero's field and accent wash paint under the
+         notch and to the home indicator. Without it the browser letterboxes the
+         page inside the safe area and every env(safe-area-inset-*) in the
+         stylesheet resolves to 0px, so .container-page and .drawer are padding
+         against nothing. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="color-scheme" content="dark" />
     <!-- Kept in sync with the rotating canvas by applyTheme() in src/lib/palette.ts. -->
     <meta name="theme-color" content="#0c1209" />

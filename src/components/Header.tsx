@@ -80,7 +80,7 @@ export default function Header() {
       <div id="header-sentinel" aria-hidden="true" className="absolute top-0 h-px w-full" />
 
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-[background-color,border-color] duration-300 ${
+        className={`header-bar fixed inset-x-0 top-0 z-50 transition-[background-color,border-color] duration-300 ${
           scrolled || open
             ? 'border-b border-ink-line bg-ink/80'
             : 'border-b border-transparent'
