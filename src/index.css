@@ -53,10 +53,14 @@
   --radius-panel: 3px;
   --radius-action: 9999px;
 
-  /* Motion. Strong ease-out for entries, drawer curve for the mobile sheet. */
+/* Motion. Strong ease-out for entries.
+     The drawer curve used to live here as --ease-drawer. The mobile sheet is
+     animated by GSAP now, which cannot read a CSS custom property, so keeping
+     a second copy of the bezier in this file would only guarantee the two
+     drift apart. lib/motion.ts holds the one copy, as a CustomEase named
+     'drawer'. Everything animated in CSS keeps its curve here. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-ui: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @layer base {
@@ -549,6 +553,8 @@ html.lenis body {
      node       -> state indication. Timeline nodes mark a real position in time.
      reveal     -> storytelling. Sections enter as they are scrolled to, once.
    All of it collapses under prefers-reduced-motion.
+     The mobile drawer is the one animation not in this file: it needs to be
+     interruptible and reversible, so it is a GSAP timeline in lib/motion.ts.
    ========================================================================= */
 @keyframes rise {
   from {

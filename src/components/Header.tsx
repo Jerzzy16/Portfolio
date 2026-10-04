@@ -1,17 +1,16 @@
 import { List, X } from '@phosphor-icons/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import {
-  usePrefersReducedMotion,
-  useScrolledPastHeader,
-  useScrollLock,
-  type CSSVars,
-} from '@/components/Reveal';
-import { nav, person, schemaLabel } from '@/data/profile';
+import MobileDrawer from '@/components/MobileDrawer';
+import { useScrolledPastHeader } from '@/components/Reveal';
+import { nav, schemaLabel } from '@/data/profile';
 
 /**
  * Desktop shows all five links on one line. Below md they collapse into a
  * drawer, because the full set cannot fit a 320px viewport at a legible size.
+ *
+ * This component owns only the intent to show the drawer. The sheet itself --
+ * its presence, animation and background inerting -- belongs to MobileDrawer.
  *
  * The header carries no vector field of its own. The hero owns the field and
  * spans behind the nav while the page is at the top, so drawing one here too
@@ -20,43 +19,25 @@ import { nav, person, schemaLabel } from '@/data/profile';
 export default function Header() {
   const scrolled = useScrolledPastHeader(12);
   const [open, setOpen] = useState(false);
-  const reduce = usePrefersReducedMotion();
 
-  const drawerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(false);
 
-  useScrollLock(open);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+  /** Stable, so MobileDrawer's Escape listener is not rebuilt on every render. */
+  const close = useCallback(() => setOpen(false), []);
 
   /*
-    The drawer covers the viewport but sits below the header in z, so without
-    this the page behind stays in the tab order and keyboard users walk straight
-    out of an open menu into content they cannot see. `inert` removes the
-    background from both the tab order and the accessibility tree, and moves
-    focus into the drawer on open and back to the trigger on close.
+    Return focus to the trigger once the drawer is dismissed. Focus moved into
+    the sheet on open, and leaving it on a link that is animating out of the
+    accessibility tree would drop the reader at the document root.
+
+    Fires on dismissal rather than on the exit finishing -- waiting 250ms to
+    hand focus back is a worse experience than handing it back immediately.
    */
   useEffect(() => {
-    const behind = [
-      document.querySelector('a[href="#main"]'),
-      document.querySelector('main'),
-      document.querySelector('footer'),
-    ];
-
     if (open) {
-      behind.forEach((el) => el?.setAttribute('inert', ''));
       wasOpen.current = true;
-      drawerRef.current?.querySelector<HTMLElement>('a[href]')?.focus();
-
-      return () => behind.forEach((el) => el?.removeAttribute('inert'));
+      return;
     }
 
     if (wasOpen.current) {
@@ -64,15 +45,6 @@ export default function Header() {
       toggleRef.current?.focus();
     }
   }, [open]);
-
-  const sheetStyle: CSSVars = {
-    opacity: open ? 1 : 0,
-    transform: open ? 'translateY(0) scale(1)' : 'translateY(-8px) scale(0.98)',
-    transformOrigin: 'top center',
-    transition: reduce
-      ? 'none'
-      : 'opacity 200ms cubic-bezier(0.23, 1, 0.32, 1), transform 250ms cubic-bezier(0.32, 0.72, 0, 1)',
-  };
 
   return (
     <>
@@ -128,38 +100,9 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Drawer. Enters from the trigger edge on the drawer curve. The header
-          sits above it so the close button is always reachable. */}
-      <div
-        id="mobile-drawer"
-        ref={drawerRef}
-        className={`drawer fixed inset-0 z-40 overflow-y-auto bg-ink md:hidden ${
-          open ? 'pointer-events-auto' : 'pointer-events-none'
-        }`}
-        hidden={!open}
-      >
-        <nav aria-label="Mobile" aria-hidden={!open} className="flex flex-col" style={sheetStyle}>
-          {nav.map((item, index) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              style={{ transitionDelay: open ? `${index * 35}ms` : '0ms' }}
-              className="border-b border-ink-line py-5 font-display text-3xl font-extrabold tracking-tight text-canvas-soft transition-colors duration-150 hover:text-primary"
-            >
-              {item.label}
-            </a>
-          ))}
-          <a
-            href={person.links.github}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="action action-primary mt-8 w-full justify-center"
-          >
-            GitHub
-          </a>
-        </nav>
-      </div>
+      {/* Enters from the trigger edge on the drawer curve. The header sits above
+          it so the close button is always reachable. */}
+      <MobileDrawer open={open} onClose={close} />
     </>
   );
 }
