@@ -426,13 +426,34 @@ export default function KineticGrid({
       return { x: event.clientX - rect.left, y: event.clientY - rect.top };
     };
 
+    /*
+      The canvas is absolutely positioned inside a relative host and its style
+      width/height are pinned in measure(), so the only things that move its
+      viewport rect are scrolling and a host resize -- both of which already
+      have listeners here. Refreshing on those, rather than inside tick(), is
+      the whole fix: reading getBoundingClientRect() immediately before draw()
+      mutated canvas state forced a synchronous layout on every frame of the
+      animation, 325ms of reflow across one load. Coalesced to one read per
+      frame because scroll fires far faster than that.
+     */
+    const refreshRect = () => {
+      rectRef.current = canvas.getBoundingClientRect();
+    };
+
+    let rectFrame = 0;
+    const scheduleRectRefresh = () => {
+      if (rectFrame) return;
+      rectFrame = requestAnimationFrame(() => {
+        rectFrame = 0;
+        refreshRect();
+      });
+    };
+
     let running = false;
     let idleTimer = 0;
     let onScreen = true;
 
     const tick = (now: number) => {
-      rectRef.current = canvas.getBoundingClientRect();
-
       const m = mouseRef.current;
       const t = targetMouseRef.current;
       m.x = lerpN(m.x, t.x, LERP_SPEED);
@@ -450,6 +471,9 @@ export default function KineticGrid({
 
     const start = () => {
       if (running || reduceMotion.matches || !onScreen || document.hidden) return;
+      // The loop may have been parked through a scroll, so the cached rect is
+      // stale by definition here. One read per start, not one per frame.
+      refreshRect();
       running = true;
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -517,14 +541,17 @@ export default function KineticGrid({
     window.addEventListener('mousemove', onMouseMove, { passive: true });
     window.addEventListener('click', onClick, { passive: true });
     document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('scroll', scheduleRectRefresh, { passive: true });
 
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('click', onClick);
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('scroll', scheduleRectRefresh);
       visibility.disconnect();
       resize.disconnect();
       window.clearTimeout(idleTimer);
+      cancelAnimationFrame(rectFrame);
       stop();
     };
   }, [draw]);

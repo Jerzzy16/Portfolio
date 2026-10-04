@@ -1,5 +1,12 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ElementType,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 
 import { getLenis } from '@/lib/smoothScroll';
 
@@ -9,8 +16,46 @@ export type CSSVars = CSSProperties & Record<`--${string}`, string | number>;
 /**
  * Scroll reveal. Purpose: storytelling, content enters in reading order.
  * Transform and opacity only. Collapses to static under reduced motion.
+ *
+ * The travel distance and stagger are handed to CSS as custom properties so
+ * the curve, duration and easing live in the MOTION block of index.css next to
+ * every other animation on the site, rather than being restated per component.
  */
 type RevealTag = 'div' | 'li' | 'article' | 'section' | 'tr';
+
+/**
+ * One observer drives every reveal on the page. A reveal unobserves itself the
+ * moment it enters, so a re-animation on scroll-past is impossible — the
+ * interface never interrupts a reader who is scrolling back up.
+ */
+let revealObserver: IntersectionObserver | null = null;
+const revealCallbacks = new WeakMap<Element, () => void>();
+
+function observeReveal(el: Element, onVisible: () => void): () => void {
+  revealCallbacks.set(el, onVisible);
+
+  if (!revealObserver) {
+    revealObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          revealCallbacks.get(entry.target)?.();
+          revealObserver?.unobserve(entry.target);
+          revealCallbacks.delete(entry.target);
+        }
+      },
+      // Matches the `amount: 0.2` viewport margin this component used before.
+      { threshold: 0.2 },
+    );
+  }
+
+  revealObserver.observe(el);
+
+  return () => {
+    revealObserver?.unobserve(el);
+    revealCallbacks.delete(el);
+  };
+}
 
 export function Reveal({
   children,
@@ -25,23 +70,34 @@ export function Reveal({
   className?: string;
   as?: RevealTag;
 }) {
-  const reduce = useReducedMotion();
-  const MotionTag = motion[Tag];
+  const ref = useRef<HTMLElement | null>(null);
+  const [visible, setVisible] = useState(false);
+  const Tag_ = Tag as ElementType;
 
-  if (reduce) {
-    return <Tag className={className}>{children}</Tag>;
-  }
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // Without IntersectionObserver there is nothing to trigger the reveal, so
+    // show the content rather than leave the page permanently blank.
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
+
+    return observeReveal(el, () => setVisible(true));
+  }, []);
 
   return (
-    <MotionTag
-      className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.65, delay, ease: [0.16, 1, 0.3, 1] }}
+    <Tag_
+      ref={ref}
+      data-visible={visible ? '' : undefined}
+      className={className ? `reveal ${className}` : 'reveal'}
+      // `delay` stays in seconds, as it has always been for this component.
+      style={{ '--reveal-delay': `${delay * 1000}ms`, '--reveal-y': `${y}px` } as CSSVars}
     >
       {children}
-    </MotionTag>
+    </Tag_>
   );
 }
 

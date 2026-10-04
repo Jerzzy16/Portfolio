@@ -33,10 +33,13 @@
   /* Semantic. Verified against surfaceAlt on every theme in the rotation. */
   --color-positive: #2ead4b;
 
-  /* Type. Manrope 800 stands in for proprietary Wise Sans 900. */
-  --font-display: 'Manrope Variable', 'Segoe UI', sans-serif;
-  --font-sans: 'Inter Variable', system-ui, sans-serif;
-  --font-mono: 'Geist Mono Variable', ui-monospace, 'Cascadia Mono', monospace;
+/* Type. Manrope 800 stands in for proprietary Wise Sans 900.
+     Each webfont is followed by its metric-matched face from fonts.css, so
+     the pre-swap render occupies the same box the real font will. */
+  --font-display: 'Manrope Variable', 'Manrope Fallback', 'Segoe UI', sans-serif;
+  --font-sans: 'Inter Variable', 'Inter Fallback', system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', 'Geist Mono Fallback', ui-monospace,
+    'Cascadia Mono', monospace;
 
   --text-hero: clamp(2.75rem, 9vw, 7.5rem);
   --text-display: clamp(2rem, 5.2vw, 3.75rem);
@@ -536,6 +539,7 @@ html.lenis body {
      rise       -> storytelling. The hero assembles in reading order.
      draw       -> storytelling. Schema connectors trace themselves left to right.
      node       -> state indication. Timeline nodes mark a real position in time.
+     reveal     -> storytelling. Sections enter as they are scrolled to, once.
    All of it collapses under prefers-reduced-motion.
    ========================================================================= */
 @keyframes rise {
@@ -566,6 +570,25 @@ html.lenis body {
   animation: fade 400ms var(--ease-out-ui) both;
 }
 
+/* Scroll reveal. A transition rather than a keyframe animation, because the
+   trigger is a one-way state flip driven by Reveal.tsx and the browser can
+   retarget a transition if that state changes mid-flight. Travel distance and
+   stagger arrive as custom properties from the component, so this rule owns
+   the curve and duration for every reveal on the site. */
+.reveal {
+  opacity: 0;
+  transform: translateY(var(--reveal-y, 18px));
+  transition:
+    opacity 650ms var(--ease-out-expo),
+    transform 650ms var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal[data-visible] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise,
   .draw-dash,
@@ -578,6 +601,15 @@ html.lenis body {
   .lb-sql {
     opacity: 1;
     animation: none !important;
+  }
+
+  /* Reveals start hidden and are shown by IntersectionObserver. Under reduced
+     motion the travel is dropped but the reveal itself must not depend on the
+     observer firing, so the end state is pinned here. */
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none !important;
   }
 
   .ln-sql {
