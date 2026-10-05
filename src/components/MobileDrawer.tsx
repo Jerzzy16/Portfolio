@@ -11,23 +11,14 @@ import {
 } from '@/lib/motion';
 
 /**
- * The mobile navigation sheet.
+ * Mobile navigation sheet.
  *
- * Two pieces of state, and keeping them apart is the point of this component.
- * `open` is intent -- the reader pressed the toggle. `present` is whether the
- * sheet is in the DOM. They used to be one value, and `hidden={!open}` meant
- * the element stopped existing the instant intent flipped, so the drawer could
- * ease in but had no way to ease out. Now `hidden` waits for `present`, which
- * waits for the exit animation to finish.
+ * `open` is intent, `present` is DOM presence. `hidden` waits for `present`,
+ * which waits for the exit animation, so the sheet can animate out at all.
  *
- * The animation is a single paused GSAP timeline at progress 0 (closed) or 1
- * (open), held behind a small handle, so a toggle mid-flight is a `reverse()`
- * rather than a fresh tween: the sheet continues from wherever it had got to
- * instead of jumping. See `lib/motion.ts` for why GSAP is loaded lazily.
- *
- * GSAP is never loaded under `prefers-reduced-motion`. That check runs before
- * the import, so those readers get an instant, unanimated drawer and download
- * none of it, rather than downloading a library to animate nothing.
+ * GSAP is a single paused timeline tweened between progress 0 and 1, so a
+ * toggle mid-flight continues from where it got to. Loaded lazily, and never
+ * at all under `prefers-reduced-motion`.
  */
 export default function MobileDrawer({
   open,
@@ -44,6 +35,7 @@ export default function MobileDrawer({
 
   /** Latest intent, readable from the timeline's async build callback. */
   const openRef = useRef(open);
+
   const reduce = usePrefersReducedMotion();
 
   useScrollLock(open);
@@ -56,44 +48,26 @@ export default function MobileDrawer({
   });
 
   /*
-    Warm GSAP while the browser is idle rather than on the open tap. Between a
-    tap and a cold dynamic import there is a network round trip, which delays
-    the first painted frame of the very animation meant to cover that delay.
+    Warm GSAP on idle rather than on the open tap: a cold dynamic import on tap
+    costs a round trip before the first frame of the animation meant to hide it.
 
-    Gated on the breakpoint the drawer actually renders at. The sheet is
-    `md:hidden`, so a desktop reader never opens it and should never download
-    it. The media query is not watched live: resizing a desktop window down to
-    phone width mid-session is not worth a matchMedia listener, and the first
-    tap still works without the prefetch, just a beat later.
-
-    Also gated on reduced motion, which `usePrefersReducedMotion` reports as
-    `false` until its own effect has read the query. The prefetch is scheduled on
-    that first pass and cancelled on the next, but `requestIdleCallback` cannot
-    fire until the browser goes idle -- well after React has re-rendered with the
-    real value -- so a reader who asked for reduced motion still never downloads
-    GSAP.
+    Gated to the breakpoint the sheet renders at (`md:hidden`), and on reduced
+    motion. Not watched live -- resizing a desktop window down is not worth a
+    matchMedia listener, and the first tap still works a beat later.
    */
   useEffect(() => {
     if (reduce) return;
     if (!window.matchMedia('(max-width: 767px)').matches) return;
 
     /*
-      `requestIdleCallback` is a Chromium and Firefox API. WebKit has never
-      shipped it -- it is still disabled by default in Safari Technology Preview
-      -- so on every iOS browser `window.requestIdleCallback` is undefined.
+      WebKit has never shipped requestIdleCallback -- it is still off by default
+      in Safari Technology Preview -- so it is undefined on every iOS browser.
+      Calling it bare threw a TypeError inside this effect, and React 19 treats
+      an uncaught commit-phase error as fatal for the root, so the whole page
+      rendered blank on a phone while desktop was fine.
 
-      Calling it bare threw a TypeError inside this effect. React 19 treats an
-      uncaught error thrown during commit as fatal for the root and unmounts
-      the entire tree, so the whole page rendered as a blank screen on a phone
-      while desktop was fine -- the `max-width: 767px` test above returns before
-      this line everywhere except on mobile, which is exactly where the API is
-      missing.
-
-      The fallback is a timeout rather than nothing: the point of this prefetch
-      is to have GSAP in the cache before the first tap, and a phone is the only
-      platform that needs it. `requestIdleCallback`'s own `timeout` option is 2s
-      here, so a timeout of the same length preserves that worst-case bound and
-      keeps the request off the critical path either way.
+      Fall back to a timeout rather than skipping: a phone is the only platform
+      that needs this prefetch. Same 2s bound as the idle option's own timeout.
     */
     if (typeof window.requestIdleCallback === 'function') {
       const idle = window.requestIdleCallback(preloadDrawerMotion, { timeout: 2000 });
@@ -117,13 +91,9 @@ export default function MobileDrawer({
 
   /*
     The drawer covers the viewport but sits below the header in z, so without
-    this the page behind stays in the tab order and keyboard users walk straight
-    out of an open menu into content they cannot see. `inert` removes the
-    background from both the tab order and the accessibility tree, and moves
-    focus into the drawer.
-
-    Tied to `open`, not `present`: the background is released the moment the
-    reader dismisses the sheet, not once the sheet has finished sliding away.
+    this the page behind stays in the tab order and keyboard users walk out of
+    an open menu into content they cannot see. Tied to `open`, not `present`:
+    release the background on dismissal, not after the slide-out.
    */
   useEffect(() => {
     const behind = [
@@ -142,10 +112,8 @@ export default function MobileDrawer({
   }, [open]);
 
   /*
-    Entering needs no explicit `setPresent(false)` on the way out -- the exit
-    animation owns that, via the timeline's `onReverseComplete`. Without
-    reduced motion there is no timeline, so this effect owns the whole
-    lifecycle itself.
+    Without reduced motion there is no timeline, so this effect owns the exit.
+    With one, the animation's onComplete is what drops `present`.
    */
   useEffect(() => {
     if (open) setPresent(true);
@@ -153,11 +121,10 @@ export default function MobileDrawer({
   }, [open, reduce]);
 
   /**
-   * Builds the animation for as long as the sheet is on screen, and only once.
+   * Builds the animation while the sheet is on screen, once.
    *
-   * Keyed on `present` rather than `open` so a close does not tear it down:
-   * reversing it is what performs the exit. Cleanup runs when `present` finally
-   * drops, which is after the exit has already played out.
+   * Keyed on `present`, not `open`, so a close does not tear it down -- the
+   * reverse is what performs the exit.
    */
   useEffect(() => {
     const sheet = sheetRef.current;
@@ -176,9 +143,9 @@ export default function MobileDrawer({
         }
 
         /*
-          * Dismissed again before GSAP finished loading, so the play/reverse
-          * effect below already ran against nothing. Settle it here rather than
-          * leaving a full-viewport backdrop parked over the page.
+          * Dismissed before GSAP finished loading, so the play/reverse effect
+          * below already ran against nothing. Settle here rather than leaving a
+          * full-viewport backdrop parked over the page.
          */
         if (!openRef.current) {
           motion.kill();
@@ -192,10 +159,8 @@ export default function MobileDrawer({
       })
       .catch(() => {
         /*
-          * GSAP failed to load -- an offline chunk, a blocked CDN, a corporate
-          * proxy. The honest fallback is a drawer that is simply already open,
-          * so drop `present` and let the next tap retry the import. Nothing
-          * here is left invisible or unclickable.
+          * GSAP failed to load -- offline chunk, blocked CDN, proxy. Fall back
+          * to a drawer that is simply already open, and retry on the next tap.
          */
         if (!cancelled) setPresent(false);
       });
@@ -217,19 +182,13 @@ export default function MobileDrawer({
   }, [open]);
 
   /*
-    The closed state is painted from React as well as from GSAP, and this copy
-    is load-bearing rather than belt-and-braces: a paused GSAP timeline does not
-    apply a `fromTo`'s from-values, so between `hidden` lifting and `play()`
-    running its first frame, this inline style is the only thing holding the
-    sheet invisible. Without it the backdrop would paint on its own -- it is a
-    full-viewport `bg-ink` div that no tween targets -- with the links still
-    transparent inside it.
+    Load-bearing, not belt-and-braces. A paused timeline does not apply a
+    fromTo's from-values, so between `hidden` lifting and play()'s first frame
+    this is the only thing holding the sheet invisible -- otherwise the
+    full-viewport backdrop paints on its own with the links still transparent.
 
-    React rewrites these properties only when their values change, so re-rendering
-    mid-animation does not stamp `opacity: 0` back over GSAP's in-flight value.
-
-    Under reduced motion there is no animation coming at all, so the resting
-    state is just "no inline style".
+    React rewrites these only when the values change, so a mid-animation
+    re-render does not stamp `opacity: 0` back over GSAP's in-flight value.
    */
   const sheetStyle: CSSVars | undefined = reduce
     ? undefined

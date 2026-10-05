@@ -3,21 +3,13 @@ import Reveal, { useOverflowX } from '@/components/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 
 /**
- * A real table, because this is tabular data with a header row and repeating
- * records: a caption for the table, a header row of column headers, and cells
- * that belong to the row they sit in.
+ * A real table: tabular data with a header row and repeating records.
  *
- * One composition at every width. Four columns with the notes in the fourth, the
- * same as the wide layout, rather than a separate stacked arrangement per
- * breakpoint — a second layout meant the notes either had to be duplicated into
- * a second row, where they were announced twice, or squeezed into a fraction of
- * the viewport, where they were unreadable.
- *
- * Four real columns cannot fit a 375px viewport at a legible measure, so where
- * they cannot fit, the table keeps its composition and its column widths and
- * scrolls sideways instead of reflowing. That leaves the notes column around
- * 245px, which is the width it needs to be readable. The scroll region gets the
- * landmark, label and focus stop only while it is actually scrollable.
+ * One composition at every width. A separate stacked layout per breakpoint meant
+ * the notes either duplicated into a second row (announced twice) or got
+ * squeezed into an unreadable fraction of the viewport. So where four columns
+ * do not fit, the table keeps its composition and scrolls sideways instead --
+ * which leaves the notes column the ~245px it needs.
  */
 export default function Experience() {
   const [scrollRef, scrolls] = useOverflowX<HTMLDivElement>();

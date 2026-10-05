@@ -24,10 +24,9 @@ function Rows({ rows }: { rows: Row[] }) {
 }
 
 /**
- * The schema diagram. One layout at every viewport: the authored wide
- * arrangement inside a fixed 1120x680 stage, scaled to fit its container. The
- * stage is transformed rather than reflowed, so a phone shows the same scatter
- * and the same connectors as a desktop, just smaller.
+ * The schema diagram. One layout at every viewport: the authored arrangement
+ * inside a fixed 1120x680 stage, scaled to fit. Transformed rather than reflowed,
+ * so a phone shows the same scatter and connectors as a desktop, just smaller.
  */
 export default function SchemaDiagram({ roll }: { roll: Roll }) {
   const diagram = useMemo(() => buildDiagram(roll), [roll]);
@@ -46,8 +45,8 @@ export default function SchemaDiagram({ roll }: { roll: Roll }) {
     [],
   );
 
-  // Container width drives the scale. The observer fires once on observe, so
-  // there is no separate initial read interleaved with the write it triggers.
+  // Container width drives the scale. The observer fires once on observe, so there
+  // is no initial read interleaved with the write it triggers.
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -86,8 +85,8 @@ export default function SchemaDiagram({ roll }: { roll: Roll }) {
     [diagram, heights],
   );
 
-  // Until the first observation lands, fall back to the authored stage width so
-  // the scale is 1 rather than 0.
+  // Until the first observation lands, fall back to stage width so scale is 1
+  // rather than 0.
   const scale = Math.min(1, (width || stageW) / stageW);
   const frameStyle = { height: stageH * scale };
   const stageStyle = {
@@ -123,17 +122,12 @@ export default function SchemaDiagram({ roll }: { roll: Roll }) {
         </div>
         <Rows rows={ent.rows} />
         {/*
-          No aria-label on this link, deliberately. The card is a schematic:
-          its rendered text runs to "db.person 1 item PK PERSON#john name S
-          status S", and Label in Name (WCAG 2.5.3) fails any accessible name
-          that does not contain all of it -- so an aria-label summarising the
-          card fights its own visible text no matter how it is worded, which is
-          exactly what voice-control users cannot cope with.
-
+          No aria-label, deliberately. Label in Name (WCAG 2.5.3) fails any
+          accessible name that does not contain all the card's text, so a
+          summarising label fights its own visible text however it is worded.
           Letting the name come from the content makes the visible text a prefix
-          of it by construction. The destination still needs saying, since a
-          hash href conveys it poorly on its own, and sr-only text contributes
-          to the accessible name without adding anything to the visible label.
+          of it by construction; the sr-only span adds the destination, which a
+          hash href conveys poorly on its own.
         */}
         <span className="sr-only">. Jump to {ent.href.slice(1)}</span>
       </a>

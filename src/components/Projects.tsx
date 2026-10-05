@@ -13,8 +13,8 @@ const SPAN: Record<ProjectSpan, string> = {
 
 /*
   What the browser should think it is fetching, in CSS pixels, so it can pick a
-  srcset candidate before layout. Mirrors the spans above: one column on mobile,
-  7 or 5 of 12 from md up, inside container-page's gutters.
+  srcset candidate before layout. Mirrors SPAN: one column on mobile, 7 or 5 of
+  12 from md up, inside container-page's gutters.
  */
 const SIZES: Record<ProjectSpan, string> = {
   feature: '(min-width: 768px) 56vw, 92vw',
@@ -25,13 +25,10 @@ const SIZES: Record<ProjectSpan, string> = {
 const SRCSET_WIDTHS = [320, 480, 640, 800, 960, 1200, 1600];
 
 /**
- * Builds a srcset from the authored Picsum URL. Picsum serves any width for a
- * seed, so the candidates are derived from the intrinsic size instead of being
- * hand-maintained next to it in the data file -- the trailing `/<w>/<h>` is the
- * only part that changes, and the aspect ratio is preserved by scaling both.
- *
- * Candidates wider than the intrinsic size are dropped: upscaling costs bytes
- * and buys nothing, since `object-cover` is already scaling to the box.
+ * Builds a srcset from the authored Picsum URL, whose trailing `/<w>/<h>` is the
+ * only part that changes -- so candidates derive from the intrinsic size instead
+ * of being hand-maintained. Anything wider than intrinsic is dropped: upscaling
+ * costs bytes and buys nothing, since `object-cover` already scales to the box.
  */
 function responsiveSrcSet(image: string, width: number, height: number): string {
   const base = image.replace(/\/\d+\/\d+$/, '');

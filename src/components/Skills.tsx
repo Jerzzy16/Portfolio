@@ -4,12 +4,12 @@ import Reveal from '@/components/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 
 /**
- * Clustered skill tiles. Real brand marks from the Simple Icons CDN, tinted to
- * the active accent so the palette stays locked.
+ * Clustered skill tiles. Brand marks from the Simple Icons CDN, tinted to the
+ * active accent.
  *
  * The CDN takes the colour as a hex in the path and cannot read a CSS custom
- * property, so the resolved accent is read from the palette rather than
- * hardcoded. A fixed hex here left every logo lime on the other five themes.
+ * property, so the resolved accent is read from the palette. A hardcoded hex
+ * left every logo lime on the other five themes.
  */
 export default function Skills() {
   const accent = getActiveAccent().replace('#', '');

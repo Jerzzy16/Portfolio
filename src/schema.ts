@@ -3,16 +3,13 @@ import { schemaBlocks, type SchemaBlock } from '@/data/profile';
 /**
  * Diagram engine.
  *
- * The stage is a fixed 1120x680 coordinate space and every entity is absolutely
- * positioned inside it. Nothing is measured from the DOM to work out where a
- * card is: a Roll picks which entity sits in which of six authored slots, so
- * geometry is known up front. The whole stage is then scaled to fit its
- * container, which means the diagram never reflows and the connectors can never
- * drift out of register with the cards.
+ * Fixed 1120x680 coordinate space, every entity absolutely positioned inside it.
+ * Nothing is measured from the DOM to place a card: a Roll picks which entity
+ * sits in which of six authored slots, so geometry is known up front and the
+ * connectors cannot drift out of register with the cards.
  *
- * The one thing that must be measured is card height, because it depends on the
- * webfont landing. routeDiagram takes those heights and anchors the connectors
- * to the real boxes.
+ * Card height is the one thing that must be measured, since it depends on the
+ * webfont landing. routeDiagram anchors the connectors to those heights.
  */
 
 export const STAGE_W = 1120;
@@ -64,9 +61,8 @@ export type Label = {
 
 /**
  * Six slots on a loose three-by-two, each column vertically offset so the
- * arrangement reads as scattered rather than gridded. Columns never overlap
- * horizontally (110px of gutter) and the row offset leaves 320px of vertical
- * clearance, both far more than a card needs.
+ * arrangement reads as scattered rather than gridded. 110px of horizontal gutter
+ * and 320px of vertical clearance, both far more than a card needs.
  */
 const SLOTS = {
   a: { l: 0, t: 0, w: 300 },
@@ -161,10 +157,9 @@ function anchor(self: Box, other: Box): { x: number; y: number } {
 const STUB = 26;
 
 /**
- * Classic ERD elbow: leave the anchor perpendicular by a short stub, run across,
- * then turn in. Routes on whichever axis dominates so it stays legible from any
- * slot pairing. Each end carries a label, which is what makes the cardinality
- * readable without a key.
+ * Classic ERD elbow: stub off perpendicular, run across, turn in. Routes on
+ * whichever axis dominates so it stays legible from any slot pairing. Each end
+ * carries a label, which is what makes cardinality readable without a key.
  */
 function route(
   a: { x: number; y: number },
@@ -220,17 +215,10 @@ export type DiagramLayout = {
 /**
  * The single entry point the diagram component renders from.
  *
- * One layout at every viewport: the authored wide arrangement, scaled to fit
- * its container. The stage keeps its own coordinate space and is transformed
- * rather than reflowed, so the scatter, the slots and the connectors are the
- * same geometry on a phone as on a desktop and the diagram reads identically,
- * just smaller. Nothing is measured from the DOM to work out where a card sits;
- * a Roll picks which entity sits in which of six authored slots, so positions
- * are known up front and the connectors cannot drift out of register.
- *
- * Card height is the one thing that must be measured, because it depends on the
- * webfont landing. routeDiagram takes those heights and anchors the connectors
- * to the real boxes.
+ * One layout at every viewport: the authored arrangement, scaled to fit its
+ * container. The stage keeps its own coordinate space and is transformed rather
+ * than reflowed, so a phone shows the same scatter, slots and connectors as a
+ * desktop -- identical, just smaller.
  */
 export function layoutDiagram(
   diagram: Diagram,

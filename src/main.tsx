@@ -7,9 +7,9 @@ import '@/index.css';
 import App from '@/App';
 import { applyTheme, pickTheme, verifyTheme } from '@/lib/palette';
 
-// The theme rotates on every page load. Nothing is written to storage, so a
-// refresh always lands on a different hue, canvas included. Painted before the
-// first render so the page never flashes the default lime.
+// Theme rotates per page load, nothing stored, so a refresh always lands on a
+// different hue. Painted before the first render so the page never flashes the
+// default lime.
 applyTheme(pickTheme());
 verifyTheme();
 

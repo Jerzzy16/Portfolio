@@ -1,21 +1,20 @@
 /**
  * Accent and surface rotation.
  *
- * One hue is picked per page load. It drives everything: the accent, and the
- * whole neutral ramp, so the canvas reads as a dark tint of the active hue
- * rather than as grey with a coloured button on it.
+ * One hue per page load drives everything, including the whole neutral ramp, so
+ * the canvas reads as a dark tint of the active hue rather than grey with a
+ * coloured button on it.
  *
  * Two things made this more than a colour swap:
  *
- * 1. Four of the five supplied base hexes cannot be used as text on a near
- *    black canvas. Measured against #0e0f0c they land between 1.08:1 and
- *    1.92:1, which is invisible. Each theme therefore derives an `accentInk`:
- *    the same hue with lightness raised until it clears 7:1.
+ * 1. Four of the five supplied base hexes cannot be text on a near black canvas
+ *    (1.08:1 to 1.92:1 against #0e0f0c -- invisible). Each theme derives an
+ *    `accentInk`: same hue, lightness raised until it clears 7:1.
  *
  * 2. Tinting the canvas means re-solving every text colour against it. Text
- *    tokens are held at a faint saturation of the theme hue rather than full,
- *    because a saturated ramp caps achievable luminance below what the display
- *    type needs. `verifyTheme` re-checks all of it at runtime.
+ *    tokens sit at a faint saturation of the hue, because a saturated ramp caps
+ *    achievable luminance below what the display type needs. `verifyTheme`
+ *    re-checks this at runtime.
  */
 
 export type Theme = {
@@ -141,8 +140,7 @@ export function contrast(a: string, b: string): number {
 
 /**
  * Raises the accent's HSL lightness until it clears `target` against `against`,
- * holding hue and saturation. Returns the starting colour unchanged if it
- * already passes.
+ * holding hue and saturation. Returns the input unchanged if it already passes.
  */
 function liftToContrast(base: string, against: string, target: number): string {
   if (contrast(base, against) >= target) return base;
@@ -162,6 +160,8 @@ const CANVAS_L = 0.052;
 const SURFACE_DL = 0.035;
 const SURFACE_ALT_DL = 0.075;
 const LINE_DL = 0.115;
+/** Text ramp saturation. Faint, so the ramp can reach the display type's
+ *  luminance -- full saturation caps it lower. */
 
 export function buildTheme(id: string, base: string, saturation = 0.42): Theme {
   const { h } = rgbToHsl(hexToRgb(base));
@@ -171,8 +171,6 @@ export function buildTheme(id: string, base: string, saturation = 0.42): Theme {
   const surfaceAlt = hsl(h, saturation, CANVAS_L + SURFACE_ALT_DL);
   const line = hsl(h, saturation * 0.7, CANVAS_L + LINE_DL);
 
-  // Text is held at a faint tint of the hue. A saturated ramp cannot reach the
-  // luminance the display type needs without clipping.
   const textPrimary = hsl(h, 0.06, 0.9);
   const textBody = hsl(h, 0.12, 0.72);
   // Verified against surfaceAlt, the lightest surface a caption can land on.
@@ -196,8 +194,8 @@ export function buildTheme(id: string, base: string, saturation = 0.42): Theme {
 }
 
 /**
- * The rotation. A random entry is picked on every page load, so the theme
- * changes on every refresh. Nothing is written to storage, on purpose.
+ * The rotation. Random entry per page load, so every refresh differs. Nothing is
+ * written to storage, on purpose.
  */
 export const THEMES: readonly Theme[] = [
   buildTheme('ember', '#480607'),
@@ -216,13 +214,9 @@ export function pickTheme(): Theme {
 }
 
 /**
- * The accent hex of the theme currently painted on the document.
- *
- * Read by anything that needs the accent as a concrete value rather than a CSS
- * token, such as the Simple Icons CDN URL in Skills.tsx, which takes a hex in
- * the path and cannot read a custom property. Set by applyTheme, which runs
- * before the first render, so a component can read it during render without a
- * DOM measurement.
+ * The accent hex currently painted on the document, for anything that needs a
+ * concrete value rather than a CSS token -- the Simple Icons CDN URL in
+ * Skills.tsx takes a hex in the path and cannot read a custom property.
  */
 let activeAccent = DEFAULT_THEME.accentInk;
 
@@ -247,11 +241,11 @@ export function applyTheme(theme: Theme): void {
 
   set('--color-primary', theme.accentInk);
   set('--color-primary-base', theme.accentBase);
-  // Comma separated on purpose. A slash-alpha custom property only works with a
-  // space separated triplet: `rgb(var(--token) / 0.2)` against a comma separated
-  // token expands to `rgb(0, 172, 206 / 0.2)`, which is invalid, so the browser
-  // discards the whole declaration and the effect silently disappears. With this
-  // token, alpha goes through the legacy form: `rgba(var(--token), 0.2)`.
+  // Comma separated on purpose. A slash-alpha custom property needs a space
+  // separated triplet: `rgb(var(--token) / 0.2)` against a comma separated token
+  // expands to `rgb(0, 172, 206 / 0.2)`, which is invalid, so the browser drops
+  // the declaration and the effect silently disappears. With this token alpha
+  // goes through the legacy form: `rgba(var(--token), 0.2)`.
   set('--color-primary-rgb', rgbToString(hexToRgb(theme.accentInk)));
   set('--color-primary-base-rgb', rgbToString(hexToRgb(theme.accentBase)));
 
@@ -271,8 +265,8 @@ export function applyTheme(theme: Theme): void {
 }
 
 /**
- * Re-checks the invariants the theme depends on. Runs once per load and warns
- * loudly, so a future edit to the ramp cannot silently ship unreadable text.
+ * Re-checks the invariants the theme depends on, once per load, so a future edit
+ * to the ramp cannot silently ship unreadable text.
  */
 export function verifyTheme(themes: readonly Theme[] = THEMES): void {
   const failures: string[] = [];

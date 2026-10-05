@@ -3,9 +3,8 @@ import Reveal from '@/components/Reveal';
 import SectionHeader from '@/components/SectionHeader';
 
 /**
- * Deliberately NOT a table, so it does not read as a second copy of the
- * Experience block. Each entry is a bordered card in an asymmetric 2-up, which
- * also gives the page a card surface it otherwise only uses for projects.
+ * Deliberately not a table, so it does not read as a second copy of the
+ * Experience block.
  */
 export default function Education() {
   return (

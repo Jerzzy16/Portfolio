@@ -26,9 +26,8 @@ export function TextLoop({
 
   /*
     Reduced motion drops the travel and keeps the swap. The site's global
-    `transition-duration: 1ms !important` override cannot do this, because
-    Framer writes `transform` inline on every frame instead of transitioning a
-    class, so nothing in CSS can shorten it.
+    `transition-duration: 1ms !important` override cannot do this: Framer writes
+    `transform` inline each frame rather than transitioning a class.
   */
   const reduce = useReducedMotion();
 
@@ -38,9 +37,8 @@ export function TextLoop({
     const timer = setInterval(() => {
       const next = (currentIndex + 1) % items.length;
       setCurrentIndex(next);
-      // Outside the updater on purpose. An updater has to be pure and React
-      // invokes it twice in StrictMode, so a callback inside it fires twice per
-      // change.
+      // Outside the updater: an updater must be pure and StrictMode invokes it
+      // twice, so a callback inside it would fire twice per change.
       onIndexChange?.(next);
     }, intervalMs);
     return () => clearInterval(timer);
@@ -60,17 +58,12 @@ export function TextLoop({
 
   return (
     /*
-      Spans, not divs. This renders inside the intro <p>, and a div there is
-      invalid HTML -- React logs "a <div> cannot be a descendant of <p>" and
-      hydration would break on a server-rendered page.
+      Spans, not divs: this renders inside the intro <p>, where a div is invalid.
 
-      h-[1lh] + overflow-hidden turn the two words into a reel. With popLayout
-      both are mounted at once, so without a clip they are painted on top of
-      each other for the length of the transition, and the incoming word starts
-      20px below the baseline on top of the line beneath it. Clipped to a single
-      line box, the outgoing word leaves through the top edge and the incoming
-      one arrives through the bottom. 1lh is the paragraph's own line box, so the
-      box can never change the line count.
+      h-[1lh] + overflow-hidden turn the two words into a reel. popLayout mounts
+      both at once, so without a clip they paint on top of each other and the
+      incoming word starts 20px low over the line beneath. 1lh is the
+      paragraph's own line box, so the clip can never change the line count.
     */
     <span
       className={cn(

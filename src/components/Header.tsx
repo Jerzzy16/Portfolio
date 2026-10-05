@@ -7,14 +7,10 @@ import { nav, schemaLabel } from '@/data/profile';
 
 /**
  * Desktop shows all five links on one line. Below md they collapse into a
- * drawer, because the full set cannot fit a 320px viewport at a legible size.
+ * drawer -- the full set cannot fit a 320px viewport at a legible size.
  *
- * This component owns only the intent to show the drawer. The sheet itself --
- * its presence, animation and background inerting -- belongs to MobileDrawer.
- *
- * The header carries no vector field of its own. The hero owns the field and
- * spans behind the nav while the page is at the top, so drawing one here too
- * would double the texture and break the fade at the projects boundary.
+ * Owns only the intent to show the drawer. The sheet's presence, animation and
+ * background inerting belong to MobileDrawer.
  */
 export default function Header() {
   const scrolled = useScrolledPastHeader(12);
@@ -26,14 +22,12 @@ export default function Header() {
   /** Stable, so MobileDrawer's Escape listener is not rebuilt on every render. */
   const close = useCallback(() => setOpen(false), []);
 
-  /*
-    Return focus to the trigger once the drawer is dismissed. Focus moved into
-    the sheet on open, and leaving it on a link that is animating out of the
-    accessibility tree would drop the reader at the document root.
-
-    Fires on dismissal rather than on the exit finishing -- waiting 250ms to
-    hand focus back is a worse experience than handing it back immediately.
-   */
+/*
+    Return focus to the trigger on dismissal. Leaving it on a link animating out
+    of the accessibility tree would drop the reader at the document root.
+    Fires on dismissal, not on the exit finishing -- waiting 250ms to hand focus
+    back is worse than handing it back immediately.
+  */
   useEffect(() => {
     if (open) {
       wasOpen.current = true;
@@ -100,8 +94,8 @@ export default function Header() {
         </div>
       </header>
 
-      {/* Enters from the trigger edge on the drawer curve. The header sits above
-          it so the close button is always reachable. */}
+      {/* Enters from the trigger edge. The header sits above it so the close button is
+          always reachable. */}
       <MobileDrawer open={open} onClose={close} />
     </>
   );

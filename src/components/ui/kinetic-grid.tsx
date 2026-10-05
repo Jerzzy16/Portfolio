@@ -5,17 +5,13 @@ import { useCallback, useEffect, useRef, type CSSProperties, type ReactNode } fr
 import { cn } from '@/lib/utils';
 
 /*
- * Adapted from the supplied kinetic-grid.tsx. Four deliberate departures from
- * the original, all documented where they occur:
- *   1. Colour is a prop, not a hardcoded blue/black pair, so the canvas obeys
- *      the page's single-accent lock (see readAccent below).
+ * Adapted from the supplied kinetic-grid.tsx. Four deliberate departures:
+ *   1. Colour is a prop, so the canvas obeys the page's single-accent lock.
  *   2. The canvas sizes to its container, not window.innerWidth, so it can be
- *      scoped to the hero instead of swallowing the whole document.
- *   3. The render loop is gated on visibility, device pixel ratio, and
- *      prefers-reduced-motion. See the loop effect at the bottom.
- *   4. Input is pointer-based rather than mouse-based, so the field answers a
- *      finger. A phone never emits mousemove, which is why the supplied version
- *      was a static blueprint on the only device that is actually a phone.
+ *      scoped to the hero instead of swallowing the document.
+ *   3. The render loop is gated on visibility, DPR and reduced motion.
+ *   4. Input is pointer-based. A phone never emits mousemove, which is why the
+ *      original was a static blueprint on the only device that is a phone.
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -50,11 +46,8 @@ export interface KineticGridProps {
   className?: string;
   /** Applied to the host element. Use this for z-index and positioning. */
   style?: CSSProperties;
-  /**
-   * CSS custom property holding the accent as "r, g, b". Read at paint time, so
-   * it follows the per-load palette rotation without a re-render.
-   * Defaults to the page accent token.
-   */
+  /** CSS custom property holding the accent as "r, g, b". Read at paint time so
+   *  it follows the per-load palette rotation without a re-render. */
   accentVar?: string;
   /** Grid pitch in px. Lower it for short bands like a header strip. */
   cellSize?: number;
@@ -81,20 +74,19 @@ const LINE_BASE: RGBA = { r: 232, g: 235, b: 230, a: 0.13 };
 const NODE_BASE: RGBA = { r: 232, g: 235, b: 230, a: 0.2 };
 const NODE_BASE_RADIUS = 1.8;
 const NODE_ACTIVE_RADIUS = 3.2;
-/** The t=0 output of lerpColor(NODE_BASE, ...), hoisted so the unlit batch is
- *  one shared string rather than one interpolation per node per frame. */
+/** The t=0 output of lerpColor(NODE_BASE, ...), hoisted so the unlit batch is one
+ *  shared string rather than one interpolation per node per frame. */
 const NODE_BASE_FILL = 'rgba(232,235,230,0.130)';
 
 const IDLE_MS = 1200;
 const MAX_DPR = 2;
 
 /*
-  Proximity is quantised into this many steps and each step is stroked as one
-  path. A phone hero is roughly 300 segments and stroking each on its own cost
-  ~300 path setups plus ~300 rgba() template strings every frame, which was the
-  single largest item in the phone frame budget. Six steps is below what the eye
-  resolves across a 0.13-to-0.55 alpha ramp, and at rest only one of them is
-  populated, so the common case collapses to a single stroke call.
+  Proximity is quantised into this many steps, each stroked as one path. A phone
+  hero is ~300 segments, and stroking each on its own cost ~300 path setups plus
+  ~300 rgba() strings per frame -- the largest item in the phone frame budget.
+  Six steps is below what the eye resolves across a 0.13-to-0.55 alpha ramp, and
+  at rest only one is populated, so the common case is a single stroke call.
 */
 const BUCKETS = 6;
 
@@ -102,9 +94,9 @@ const BUCKETS = 6;
 const LIT = 0.06;
 
 /*
-  Ceiling on grid points. The authored pitch is honoured until cols*rows would
-  exceed this, then it is coarsened to fit. Only very wide canvases reach it --
-  a 2560px hero is 48x34 = 1632 points at the default pitch.
+  Ceiling on grid points. The authored pitch holds until cols*rows would exceed
+  this, then it is coarsened. Only very wide canvases reach it -- a 2560px hero
+  is 48x34 = 1632 points at the default pitch.
 */
 const MAX_POINTS = 1600;
 
@@ -112,9 +104,8 @@ const MAX_POINTS = 1600;
 const GLOW_PX = 64;
 
 /*
-  Pointer reach, as a fraction of the canvas short edge, that the influence
-  radius is scaled against. A desktop hero's short edge is ~760px, so desktop
-  keeps the authored radius untouched.
+  Pointer reach as a fraction of the canvas short edge. A desktop hero's short
+  edge is ~760px, so desktop keeps the authored radius untouched.
 */
 const REACH_REFERENCE = 760;
 const REACH_MIN = 0.6;
@@ -138,11 +129,10 @@ function lerpColor(base: RGBA, active: RGBA, t: number): string {
 }
 
 /**
- * Rasterises the node glow once. This used to be a createRadialGradient per lit
- * node per frame -- around thirty gradient objects a frame on a phone mid-drag,
- * and gradient construction is one of the more expensive things a 2D context
- * does. A sprite costs one drawImage per node instead, and the browser's
- * downscaling filter antialiases it for free.
+ * Rasterises the node glow once. A createRadialGradient per lit node per frame
+ * cost ~30 gradient objects a frame on a phone mid-drag, and gradient
+ * construction is one of the more expensive things a 2D context does. A sprite
+ * costs one drawImage per node, antialiased free by the downscale filter.
  */
 function buildGlowSprite(rgb: string): HTMLCanvasElement {
   const sprite = document.createElement('canvas');
@@ -154,7 +144,7 @@ function buildGlowSprite(rgb: string): HTMLCanvasElement {
 
   const half = GLOW_PX / 2;
   // Inner stop at 0.3 of the radius, mid-range of the 0.25-0.4 the original
-  // produced as the node radius grew across its range.
+  // produced as the node radius grew.
   const grd = ctx.createRadialGradient(half, half, half * 0.3, half, half, half);
   grd.addColorStop(0, `rgba(${rgb},1)`);
   grd.addColorStop(1, `rgba(${rgb},0)`);
@@ -171,12 +161,11 @@ function glowSprite(theme: Accent): HTMLCanvasElement | null {
 
 /**
  * Reads the accent as "r, g, b" off the document at paint time rather than
- * closing over a value. That is what lets the per-load palette rotation in
- * src/lib/palette.ts recolour the canvas without re-rendering this component.
+ * closing over a value, so the per-load palette rotation recolours the canvas
+ * without re-rendering.
  *
- * Memoised on the property name. This used to run inside every frame, and a
- * getComputedStyle call there forces a style recalc 60 times a second for a
- * value that is written once per page load.
+ * Memoised on the property name: a getComputedStyle call per frame forces a
+ * style recalc 60 times a second for a value written once per page load.
  */
 let accentCache: { name: string; accent: Accent } | null = null;
 
@@ -233,20 +222,19 @@ export default function KineticGrid({
 
   /*
     Influence strength, 0-1, held apart from position. A mouse keeps hovering
-    after pointerup, so the field stays lit where it was left. A finger does
-    not, and a tap that left the grid permanently deformed would be the most
-    obvious tell on the platform. Releasing strength relaxes the field back to
-    flat in place -- lerping the influence toward an off-screen sentinel cannot
-    do that without dragging it across the canvas on the way out.
+    after pointerup so the field stays lit where it was left; a finger does not,
+    and a tap that left the grid permanently deformed is the most obvious tell
+    on the platform. Releasing strength relaxes the field flat in place -- a
+    lerp toward an off-screen sentinel would drag it across the canvas.
    */
   const strengthRef = useRef(1);
   const targetStrengthRef = useRef(1);
 
   /*
     The influence point parks at a sentinel until something contacts it. Lerping
-    in from that sentinel takes about 1.5s at the authored rate -- long enough
-    that the very first press on a phone, which is the one that has to sell the
-    effect, does nothing visible. The first contact primes it instead.
+    in from there takes ~1.5s at the authored rate -- long enough that the first
+    press on a phone, the one that has to sell the effect, does nothing visible.
+    The first contact primes it outright instead.
    */
   const primedRef = useRef(false);
 
@@ -255,11 +243,11 @@ export default function KineticGrid({
   const lastMoveRef = useRef(0);
 
   /*
-    Whether the frame loop is live, and which run of the effect owns it. Both
-    live on the component rather than in the effect body, because StrictMode
-    mounts the effect twice: two closures each with their own `running` flag
-    disagree about one loop, and the loser cancels the winner's pending frame.
-    A generation token lets the superseded run retire instead of fighting.
+    Whether the frame loop is live, and which run of the effect owns it. Both on
+    the component rather than in the effect body, because StrictMode mounts the
+    effect twice: two closures each with their own `running` flag disagree about
+    one loop, and the loser cancels the winner's pending frame. A generation
+    token lets the superseded run retire instead of fighting.
    */
   const runningRef = useRef(false);
   const genRef = useRef(0);
@@ -281,32 +269,31 @@ export default function KineticGrid({
 
   /*
     Pointer reach, resolved against the measured canvas rather than taken from
-    the prop. A fingertip needs local precision: the authored 250px radius is
-    61% of a 412px viewport, so on a phone a single touch lights the entire
-    field and there is nothing left for the ripple to read against. Scaling by
-    the short edge keeps reach a constant fraction of the screen. Held in a ref
-    so the hot loop reads it without a closure dependency.
-  */
+    the prop. A fingertip needs local precision: the authored 250px radius is 61%
+    of a 412px viewport, so one touch would light the entire field and leave the
+    ripple nothing to read against. Held in a ref so the hot loop reads it
+    without a closure dependency.
+   */
   const tuneRef = useRef<{ radius: number; maxWarp: number }>({
     radius: INFLUENCE_RADIUS,
     maxWarp: MAX_WARP,
   });
 
   /*
-    The dot texture never moves and neither does the background fill, so both
-    are baked into one offscreen canvas and blitted with a single drawImage.
-    It used to be ~450 beginPath/arc/fill calls per frame at a phone's hero
-    size, which was more expensive than the entire grid it sat behind.
-  */
+    The dot texture and background fill never move, so both are baked into one
+    offscreen canvas and blitted with a single drawImage. Repainting them per
+    frame was ~450 beginPath/arc/fill calls at a phone's hero size, more
+    expensive than the entire grid it sat behind.
+   */
   const backdropRef = useRef<HTMLCanvasElement | null>(null);
 
   // ── Warp ────────────────────────────────────────────────────────────────────
 
   /*
-    Writes the warped position for one grid point straight into the frame
-    buffers and returns its proximity. This used to allocate a `{ pt, proximity }`
-    object per point per frame, which at a 54px pitch over a full hero is
-    several hundred objects a frame for values that are immediately consumed.
+    Writes one grid point's warped position straight into the frame buffers and
+    returns its proximity. Returns a number rather than an object: at a 54px
+    pitch over a full hero, several hundred objects a frame were allocated for
+    values that are immediately consumed.
    */
   const warpInto = useCallback(
     (
@@ -358,8 +345,8 @@ export default function KineticGrid({
         const t = dist / radius;
         const eased = t < 0.01 ? 0 : (1 - t) * (1 - t) * Math.min(1, dist / 60);
         // Scaled by strength as well as proximity, so a released influence
-        // settles the nodes back onto their own grid intersections instead of
-        // fading the highlight while leaving the geometry bent.
+        // settles nodes back onto their own intersections instead of fading the
+        // highlight while leaving the geometry bent.
         const warpAmt = eased * maxWarp * pinFactor * strength;
         const angle = Math.atan2(dy, dx);
         xs[i] = gx - Math.cos(angle) * warpAmt + rx;
@@ -422,7 +409,7 @@ export default function KineticGrid({
       const hSegs = rows * (cols - 1);
       const vSegs = cols * (rows - 1);
 
-      // Buffers are kept across frames and only reallocated when the grid
+      // Buffers survive across frames and are only reallocated when the grid
       // dimensions change, so a steady-state frame allocates nothing.
       let buf = gridRef.current;
       if (!buf || buf.cols !== cols || buf.rows !== rows) {
@@ -461,15 +448,14 @@ export default function KineticGrid({
         }
       }
 
-      // Ease once, in place. Both the segments and the nodes read the eased
-      // value from here on, which is one pass instead of two smoothsteps per
-      // consumer.
+      // Ease once, in place. Segments and nodes both read the eased value from
+      // here on -- one pass instead of two smoothsteps per consumer.
       for (let i = 0; i < total; i++) prox[i] = smoothstep(prox[i]);
 
       // ── Segments ───────────────────────────────────────────────────────────
       //
       // One bucket index per segment, horizontal rows first then vertical
-      // columns, so the draw pass can walk the same order twice without
+      // columns, so the draw pass walks the same order twice without
       // recomputing the average.
       let n = 0;
       let mask = 0;
@@ -580,14 +566,13 @@ export default function KineticGrid({
 
   // ── Loop ────────────────────────────────────────────────────────────────────
   //
-  // Department 3: the supplied version ran an unconditional rAF forever at
-  // window size. This one sizes to the host, scales the backing store for
-  // device pixel ratio, and parks itself whenever motion would be wasted:
-  // off screen, backgrounded tab, reduced motion, or pointer gone idle.
+  // Sizes to the host, scales the backing store for DPR, and parks itself
+  // whenever motion would be wasted: off screen, backgrounded tab, reduced
+  // motion, or pointer gone idle.
   //
   // Pointer-idle parking is the important one. The grid only moves because the
-  // pointer moves it, so when the pointer stops the field is correct at rest.
-  // A touch device therefore burns no frame at all until a finger lands.
+  // pointer moves it, so when the pointer stops the field is correct at rest --
+  // a touch device burns no frame at all until a finger lands.
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -597,10 +582,7 @@ export default function KineticGrid({
     const gen = ++genRef.current;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    /*
-      Bakes the fill and the dot texture into an offscreen canvas. Neither ever
-      moves, and both used to be repainted from scratch every frame.
-     */
+    /* Bakes the fill and dot texture into an offscreen canvas. Neither moves. */
     const buildBackdrop = (w: number, h: number, dpr: number) => {
       const plate = document.createElement('canvas');
       plate.width = Math.round(w * dpr);
@@ -646,30 +628,28 @@ export default function KineticGrid({
       sizeRef.current = { w, h, dpr };
 
       // Reach as a fraction of the short edge, so a phone gets a fingertip's
-      // worth of precision and a desktop keeps the authored radius.
+      // precision and a desktop keeps the authored radius.
       const reach = Math.min(1, Math.max(REACH_MIN, Math.min(w, h) / REACH_REFERENCE));
       tuneRef.current = {
         radius: influenceRadius * reach,
         maxWarp: cellSize * (MAX_WARP / CELL_SIZE),
       };
 
-      // Rebaking is only worth it when the pixels actually changed. Resize
-      // fires on rotation and on any layout reflow, and a phone's URL bar is
-      // more than capable of producing a burst of them.
+      // Rebake only when the pixels actually changed. Resize fires on rotation
+      // and on any reflow, and a phone's URL bar is more than capable of
+      // producing a burst of them.
       if (resized) backdropRef.current = buildBackdrop(w, h, dpr);
 
       rectRef.current = canvas.getBoundingClientRect();
     };
 
     /*
-      The canvas is absolutely positioned inside a relative host and its style
-      width/height are pinned in measure(), so the only things that move its
-      viewport rect are scrolling and a host resize -- both of which already
-      have listeners here. Refreshing on those, rather than inside tick(), is
-      the whole fix: reading getBoundingClientRect() immediately before draw()
-      mutated canvas state forced a synchronous layout on every frame of the
-      animation, 325ms of reflow across one load. Coalesced to one read per
-      frame because scroll fires far faster than that.
+      The canvas is absolutely positioned in a relative host and its style size
+      is pinned in measure(), so only scrolling and a host resize move its
+      viewport rect -- both already have listeners here. Refreshing on those
+      rather than inside tick() is the whole fix: a getBoundingClientRect()
+      immediately before draw() forced a synchronous layout every frame, 325ms of
+      reflow across one load. Coalesced to one read per frame.
      */
     const refreshRect = () => {
       rectRef.current = canvas.getBoundingClientRect();
@@ -694,11 +674,11 @@ export default function KineticGrid({
       if (gen !== genRef.current) return;
 
       /*
-        Frame-rate independent lerp. A fixed 0.08 per frame runs twice as fast
-        on a 120Hz ProMotion phone as it does at 60Hz, so the field tracked the
-        finger at one speed on desktop and another on the phone. Expressed as a
-        60Hz-equivalent step count, capped so a stalled tab does not snap the
-        field across the canvas in one frame.
+        Frame-rate independent lerp. A fixed 0.08 per frame runs twice as fast on
+        a 120Hz ProMotion phone as at 60Hz, so the field tracked the finger at one
+        speed on desktop and another on the phone. Expressed as a 60Hz-equivalent
+        step count, capped so a stalled tab cannot snap the field across the
+        canvas in one frame.
       */
       const frames = lastFrame === 0 ? 1 : Math.min(4, (now - lastFrame) / (1000 / 60));
       lastFrame = now;
@@ -725,7 +705,7 @@ export default function KineticGrid({
     const start = () => {
       if (runningRef.current || reduceMotion.matches || !onScreen || document.hidden) return;
       // The loop may have been parked through a scroll, so the cached rect is
-      // stale by definition here. One read per start, not one per frame.
+      // stale here by definition. One read per start, not one per frame.
       refreshRect();
       lastFrame = 0;
       runningRef.current = true;
@@ -733,11 +713,10 @@ export default function KineticGrid({
     };
 
     /*
-      Unconditional cancel. An earlier run of this effect tearing down would
-      otherwise cancel the frame id belonging to the run that replaced it, while
-      that run's own flag stayed set -- a loop that is marked running, has no
-      pending frame, and can therefore never be restarted. StrictMode makes that
-      interleaving the default on every mount in development.
+      Unconditional cancel. An earlier run tearing down would otherwise cancel
+      the frame id belonging to the run that replaced it, while that run's own
+      flag stayed set -- a loop marked running with no pending frame, which can
+      never be restarted. StrictMode makes this interleaving the default.
      */
     const stop = () => {
       runningRef.current = false;
@@ -775,17 +754,15 @@ export default function KineticGrid({
 
     /*
       Pointer, not mouse. `pointermove` covers all three input types at once: a
-      mouse hovers, a finger only reports while it is down, and a pen does both.
-      The field is `pointer-events-none` and the listeners sit on window, so a
-      full-bleed layer can never intercept a tap meant for the page. Both are
-      passive and neither calls preventDefault, so the hero stays scrollable
-      under the finger that is warping it -- the browser takes the gesture for
-      scrolling and fires pointercancel, and the warp releases on its own.
-     */
-    /*
-      Places the influence under the pointer. The first contact in a page's
-      life seeds the smoothed position outright, so the field lights where the
-      finger landed instead of sliding in from the sentinel.
+      mouse hovers, a finger only reports while it is down, a pen does both.
+      Listeners sit on window and the field is `pointer-events-none`, so a
+      full-bleed layer can never intercept a tap meant for the page. Passive and
+      no preventDefault, so the hero stays scrollable under the finger warping
+      it -- the browser takes the gesture and fires pointercancel, and the warp
+      releases on its own.
+
+      `aim` seeds the smoothed position outright on first contact, so the field
+      lights where the finger landed instead of sliding in from the sentinel.
      */
     const aim = (x: number, y: number) => {
       if (primedRef.current) {
@@ -810,10 +787,10 @@ export default function KineticGrid({
       /*
         Only wake the loop when the pointer is over the field. A touch pointer
         reports movement for every finger on the glass, including a scroll
-        gesture started anywhere in the document, so without this bounds test a
-        single flick to the bottom of the page redraws the whole canvas at frame
-        rate on the way. The target still updates, so a loop that is already
-        running decays and parks on its idle timer instead of freezing warped.
+        started anywhere in the document, so without this bounds test one flick
+        to the bottom of the page redraws the whole canvas at frame rate on the
+        way. The target still updates, so a running loop decays and parks on its
+        idle timer instead of freezing warped.
       */
       if (x >= 0 && y >= 0 && x <= rect.width && y <= rect.height) start();
       scheduleIdle();
@@ -827,7 +804,7 @@ export default function KineticGrid({
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
       // The field can be a band rather than the whole page, so ignore presses
-      // that land outside it. Without this, a ripple would be born invisible.
+      // outside it -- otherwise a ripple is born invisible.
       if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
 
       aim(x, y);
@@ -838,11 +815,10 @@ export default function KineticGrid({
     };
 
     /*
-      Release. A mouse is still hovering after pointerup, so the field stays lit
-      where it was left. A finger and a pen are not, and a tap that left the
-      grid bent would read as a bug. pointercancel covers the case where the
-      browser takes the gesture for a scroll, which is the common outcome of a
-      drag that started on the field.
+      Release. A mouse is still hovering after pointerup so the field stays lit
+      where it was left; a finger and a pen are not, and a tap that left the
+      grid bent reads as a bug. pointercancel covers a gesture the browser took
+      for a scroll -- the common outcome of a drag that started on the field.
      */
     const onPointerRelease = (event: PointerEvent) => {
       if (reduceMotion.matches) return;

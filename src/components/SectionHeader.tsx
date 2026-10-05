@@ -1,11 +1,9 @@
 /**
- * Section header. One focused message, stacked vertically: headline, then the
- * query line, then an optional note.
+ * Section header: headline, query line, optional note.
  *
- * The query line is the motif from the reference. It earns its place because it
- * states what the section actually holds rather than describing it. It wraps
- * rather than scrolling horizontally, so it never introduces a scroll region
- * the reader has no reason to expect inside a heading block.
+ * The query line states what the section holds rather than describing it. It
+ * wraps rather than scrolling horizontally, so it never introduces a scroll
+ * region inside a heading block.
  */
 export default function SectionHeader({
   title,
