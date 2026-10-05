@@ -4,3 +4,6 @@ shots
 .playwright-mcp
 .DS_Store
 *.local
+AGENTS.md
+tsconfig.app.tsbuildinfo
+tsconfig.node.tsbuildinfo

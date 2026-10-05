@@ -77,8 +77,31 @@ export default function MobileDrawer({
     if (reduce) return;
     if (!window.matchMedia('(max-width: 767px)').matches) return;
 
-    const idle = window.requestIdleCallback(preloadDrawerMotion, { timeout: 2000 });
-    return () => window.cancelIdleCallback(idle);
+    /*
+      `requestIdleCallback` is a Chromium and Firefox API. WebKit has never
+      shipped it -- it is still disabled by default in Safari Technology Preview
+      -- so on every iOS browser `window.requestIdleCallback` is undefined.
+
+      Calling it bare threw a TypeError inside this effect. React 19 treats an
+      uncaught error thrown during commit as fatal for the root and unmounts
+      the entire tree, so the whole page rendered as a blank screen on a phone
+      while desktop was fine -- the `max-width: 767px` test above returns before
+      this line everywhere except on mobile, which is exactly where the API is
+      missing.
+
+      The fallback is a timeout rather than nothing: the point of this prefetch
+      is to have GSAP in the cache before the first tap, and a phone is the only
+      platform that needs it. `requestIdleCallback`'s own `timeout` option is 2s
+      here, so a timeout of the same length preserves that worst-case bound and
+      keeps the request off the critical path either way.
+    */
+    if (typeof window.requestIdleCallback === 'function') {
+      const idle = window.requestIdleCallback(preloadDrawerMotion, { timeout: 2000 });
+      return () => window.cancelIdleCallback(idle);
+    }
+
+    const timer = window.setTimeout(preloadDrawerMotion, 2000);
+    return () => window.clearTimeout(timer);
   }, [reduce]);
 
   useEffect(() => {
