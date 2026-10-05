@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { CSSVars } from '@/components/Reveal';
 import SchemaDiagram from '@/components/SchemaDiagram';
 import KineticGrid from '@/components/ui/kinetic-grid';
-import AnimatedTextRoller from '@/components/ui/animated-text-04';
+import { TextLoop } from '@/components/ui/animated-text-04';
 import { person, schemaLabel } from '@/data/profile';
 import type { Roll } from '@/schema';
 
@@ -104,9 +104,17 @@ export default function Hero() {
           style={{ animationDelay: '210ms' } as CSSVars}
         >
           {INTRO_HEAD}
-          {/* Weight and accent, not a font swap: the reel sits mid-sentence, and
+          {/* Weight and accent, not a font swap: the loop sits mid-sentence, and
               swapping families halfway through a line reads as a mistake. */}
-          <AnimatedTextRoller roles={person.roles} className="font-semibold text-primary" />
+          <TextLoop className="font-semibold text-primary" interval={2}>
+            {person.roles.map((role) => (
+              <span key={role}>{role}</span>
+            ))}
+          </TextLoop>
+          {/* The loop only ever has the current role in the DOM, so a screen
+              reader would only ever hear one of the three. This gives it the
+              whole set, once, in the same slot. */}
+          <span className="sr-only">{person.roles.join(', ')}</span>
           {INTRO_TAIL}
         </p>
 

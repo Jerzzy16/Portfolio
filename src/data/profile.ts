@@ -110,7 +110,7 @@ export const person = {
     320px. A longer role clips rather than wrapping -- shorten it rather than
     widening it.
   */
-  roles: ['Software', 'Network', 'Systems'] as const,
+  roles: ['Software', 'Systems', 'Network'] as const,
   tagline: 'To Infinity and Beyond. Reach the stars with code that scales.',
   status: 'open_to_work',
   // PLACEHOLDER. Single address only, no time or weather strip.
