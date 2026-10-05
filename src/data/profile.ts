@@ -110,7 +110,7 @@ export const person = {
     320px. A longer role clips rather than wrapping -- shorten it rather than
     widening it.
   */
-  roles: ['Software', 'Systems', 'Network'] as const,
+  roles: ['Software', 'Systems'] as const,
   tagline: 'To Infinity and Beyond. Reach the stars with code that scales.',
   status: 'open_to_work',
   // PLACEHOLDER. Single address only, no time or weather strip.
@@ -166,8 +166,8 @@ export const schemaBlocks: readonly SchemaBlock[] = [
     href: '#top',
     keys: [['PK', schemaHandle]],
     fields: [
-      ['name', 'S'],
-      ['status', 'S'],
+      ['name', 'John Teston'],
+      ['status', 'open_to_work'],
     ],
   },
   {
@@ -180,9 +180,9 @@ export const schemaBlocks: readonly SchemaBlock[] = [
     href: '#contact',
     keys: [['PK', schemaHandle]],
     fields: [
-      ['github', 'S'],
-      ['linkedin', 'S'],
-      ['email', 'S'],
+      ['github', 'Jerzzy16'],
+      ['linkedin', 'John Teston'],
+      ['email', 'johnjeruel@gmail.com'],
     ],
   },
   {
@@ -194,9 +194,9 @@ export const schemaBlocks: readonly SchemaBlock[] = [
       ['SK', 'EXP#001'],
     ],
     fields: [
-      ['role', 'S'],
-      ['company', 'S'],
-      ['period', 'M'],
+      ['role', 'IT personnel'],
+      ['company', 'The Oasis at Grace Bay'],
+      ['period', '2026\u00a0\u2013\u00a0Present'],
     ],
   },
   {
@@ -208,8 +208,8 @@ export const schemaBlocks: readonly SchemaBlock[] = [
       ['SK', 'SKILL#001'],
     ],
     fields: [
-      ['name', 'S'],
-      ['category', 'S'],
+      ['name', ' TypeScript'],
+      ['category', 'Software Development'],
     ],
   },
   {
@@ -235,8 +235,8 @@ export const schemaBlocks: readonly SchemaBlock[] = [
       ['SK', 'EDU#001'],
     ],
     fields: [
-      ['degree', 'S'],
-      ['school', 'S'],
+      ['degree', 'Bachelor of Computer Science'],
+      ['school', 'Mapua University'],
     ],
   },
 ];

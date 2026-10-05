@@ -293,6 +293,15 @@ html {
     color: var(--color-mute);
   }
 
+  /* Arrives with the last satellite rather than with the hero block it used to
+     share. Scoped to the diagram because .diagram-note is shared: Experience.tsx
+     uses it for its table caption, which is already inside a Reveal and must not
+     acquire a second entrance. Its slot is here rather than in schema.ts because
+     this caption is presentation, not a node in the diagram. */
+  .diagram-wrap .diagram-note {
+    animation: rise 700ms var(--ease-out-expo) 1.6s both;
+  }
+
   @media (min-width: 768px) {
     .diagram-note {
       font-size: 0.625rem;
@@ -354,6 +363,14 @@ html {
     background-color: var(--color-ink-deep);
     opacity: 0;
     animation: rise 620ms var(--ease-out-expo) forwards;
+  }
+
+  /* The root record's entrance. It is the one card a reader looks for first, so
+     it scales in rather than rising like its satellites. Needs the blueprint class
+     in the selector to outrank .card.blueprint's animation, or the rise would win
+     on specificity and this would never play. */
+  .card.blueprint.ent-person {
+    animation: pop-hub 560ms var(--ease-out-expo) forwards;
   }
 
   .hoverable {
@@ -487,7 +504,7 @@ html {
     stroke-linecap: butt;
     stroke-dasharray: 0.018 0.012;
     stroke-dashoffset: 0;
-    animation: draw-dash 900ms var(--ease-out-expo) both;
+    animation: draw-dash 620ms var(--ease-out-expo) both;
   }
 
   .lb-sql {
@@ -553,6 +570,7 @@ html.lenis body {
    MOTION
    Purpose per animation:
      rise       -> storytelling. The hero assembles in reading order.
+     pop-hub    -> storytelling. db.person leads the diagram, so it scales in.
      draw       -> storytelling. Schema connectors trace themselves left to right.
      node       -> state indication. Timeline nodes mark a real position in time.
      reveal     -> storytelling. Sections enter as they are scrolled to, once.
@@ -568,6 +586,18 @@ html.lenis body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Scale starts at 0.94, never 0 -- nothing appears from nothing. */
+@keyframes pop-hub {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -614,8 +644,10 @@ html.lenis body {
     animation: none !important;
   }
 
-  /* Cards and labels start hidden, so they must be forced visible. */
+  /* Cards and labels start hidden, so they must be forced visible. The root card
+     matches through .card.blueprint whichever entrance it was given. */
   .card.blueprint,
+  .diagram-wrap .diagram-note,
   .lb-sql {
     opacity: 1;
     animation: none !important;

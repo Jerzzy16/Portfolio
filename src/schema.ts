@@ -84,7 +84,32 @@ const LAYOUTS: Record<Roll, Record<string, keyof typeof SLOTS>> = {
 /** Fallback height before the first measurement lands. */
 const ESTIMATED_H = 168;
 
-const SATELLITE_DELAY = 0.08;
+/*
+  The reveal, as one sequence: db.person pops, the connectors trace out, then the
+  satellites rise as their own wire lands. Every delay the diagram uses is here,
+  so retiming the whole thing is a single-file edit. The durations and curves stay
+  in index.css beside the keyframes they belong to.
+
+  This used to begin at 0.1s behind a .rise fade on the wrapper in Hero.tsx. The
+  fade was the wrapper's own 700ms opacity ramp, and it nested inside all six card
+  entrances -- nested opacity multiplies, so the wrapper's fade dominated and the
+  stagger was squashed into the window where the parent was already opaque. All
+  six cards landed together. The diagram now owns its own entrance and takes the
+  hero cascade slot the wrapper used to hold.
+*/
+const PERSON_DELAY = 0.35;
+
+/** Connectors leave once the root has landed, 80ms apart so they read as one gesture. */
+const LINE_BASE = 0.9;
+const LINE_GAP = 0.08;
+
+/** Satellites start landing while the lines are still drawing, each on its own wire. */
+const SATELLITE_BASE = 1.15;
+const SATELLITE_GAP = 0.1;
+
+/** Cardinality glyphs, as offsets from their connector's own delay. */
+const LABEL_OFFSET = 0.46;
+const LABEL_GLYPH_OFFSET = 0.54;
 
 function toRows(block: SchemaBlock): Row[] {
   const keys: Row[] = block.keys.map(([kind, value]) => ({
@@ -119,12 +144,12 @@ export function buildDiagram(roll: Roll): Diagram {
   const personBlock = byId.get('db.person');
   if (!personBlock) throw new Error('db.person missing from schemaBlocks');
 
-  const person = makeEnt(personBlock, SLOTS[layout['db.person']], 0.1);
+  const person = makeEnt(personBlock, SLOTS[layout['db.person']], PERSON_DELAY);
 
   const satellites = schemaBlocks
     .filter((block) => block.id !== 'db.person')
     .map((block, index) =>
-      makeEnt(block, SLOTS[layout[block.id]], SATELLITE_DELAY * (index + 1)),
+      makeEnt(block, SLOTS[layout[block.id]], SATELLITE_BASE + SATELLITE_GAP * index),
     );
 
   return { dialect: 'sql', roll, person, satellites };
@@ -244,17 +269,17 @@ export function routeDiagram(
   diagram.satellites.forEach((sat, index) => {
     const box = boxFor(sat, slots, heights);
     const { d, fromLabel, toLabel } = route(anchor(root, box), anchor(box, root));
-    const base = 0.5 + index * 0.09;
+    const base = LINE_BASE + LINE_GAP * index;
 
     connectors.push({ d, delay: base });
 
-    labels.push({ x: fromLabel.x, y: fromLabel.y, text: '1', anchor: 'middle', delay: base + 0.38 });
+    labels.push({ x: fromLabel.x, y: fromLabel.y, text: '1', anchor: 'middle', delay: base + LABEL_OFFSET });
     labels.push({
       x: toLabel.x,
       y: toLabel.y,
       text: farGlyph(sat.id),
       anchor: 'middle',
-      delay: base + 0.46,
+      delay: base + LABEL_GLYPH_OFFSET,
     });
   });
 

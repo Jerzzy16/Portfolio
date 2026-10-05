@@ -110,7 +110,13 @@ export default function Hero() {
           {INTRO_TAIL}
         </p>
 
-        <div className="rise mt-14 md:mt-20" style={{ animationDelay: '350ms' } as CSSVars}>
+        {/* No .rise here. The wrapper used to fade itself in over 700ms, which
+            nested inside all six of the diagram's card entrances and multiplied
+            with them, so every card was already opaque by the time the wrapper
+            was visible and the whole diagram landed at once. The diagram now runs
+            its own timeline and takes the hero cascade slot this wrapper held --
+            PERSON_DELAY in schema.ts is 350ms, matching the delays above it. */}
+        <div className="mt-14 md:mt-20">
           <SchemaDiagram roll={roll} />
         </div>
       </div>
