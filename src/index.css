@@ -59,8 +59,12 @@
      a second copy of the bezier in this file would only guarantee the two
      drift apart. lib/motion.ts holds the one copy, as a CustomEase named
      'drawer'. Everything animated in CSS keeps its curve here. */
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+--ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-ui: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Strong ease-in-out, for a value that travels on screen and keeps travelling
+     -- the role reel in animated-text-04. An ease-out would brake into every
+     role and an ease-in would crawl out of the last one. */
+  --ease-in-out-ui: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 @layer base {

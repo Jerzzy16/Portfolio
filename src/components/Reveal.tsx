@@ -155,6 +155,28 @@ export function usePrefersReducedMotion(): boolean {
 }
 
 /**
+ * Whether the device has a real pointer to hover with. The hover-half of the
+ * same query Tailwind's `hover:` variants gate on, so a JS hover affordance and
+ * a CSS one always agree on the same devices.
+ *
+ * Exists so hover behaviour can be skipped entirely on touch, where a tap fires
+ * pointerenter and would latch the interaction on with nothing to clear it.
+ */
+export function useFinePointer(): boolean {
+  const [fine, setFine] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia('(hover: hover) and (pointer: fine)');
+    setFine(query.matches);
+    const onChange = (event: MediaQueryListEvent) => setFine(event.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+
+  return fine;
+}
+
+/**
  * Tracks whether an element's content overflows it horizontally.
  *
  * Used to decide whether a scroll container needs the accessible plumbing for

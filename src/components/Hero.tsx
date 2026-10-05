@@ -3,10 +3,21 @@ import { useState } from 'react';
 import type { CSSVars } from '@/components/Reveal';
 import SchemaDiagram from '@/components/SchemaDiagram';
 import KineticGrid from '@/components/ui/kinetic-grid';
+import AnimatedTextRoller from '@/components/ui/animated-text-04';
 import { person, schemaLabel } from '@/data/profile';
 import type { Roll } from '@/schema';
 
 const ROLLS: readonly Roll[] = [0, 1, 2, 3];
+
+/**
+ * The intro is a template: `{roles}` is the one token it takes, and the reel
+ * takes that slot. Splitting rather than interpolating means the roles are live
+ * text in the sentence instead of a frozen copy of it, and it keeps the string
+ * in profile.ts readable as prose. The trailing default is the guard for a
+ * future edit that drops the token -- without it the sentence would end silently
+ * after "I'm a".
+ */
+const [INTRO_HEAD, INTRO_TAIL = ''] = person.intro.split('{roles}');
 
 /**
  * The vector field. Per the brief it fills this container and stops where the
@@ -90,12 +101,16 @@ export default function Hero() {
 
         <p
           className="rise mx-auto mt-6 max-w-[62ch] text-center text-base leading-relaxed text-body md:text-lg"
-          style={{ animationDelay: '140ms' } as CSSVars}
+          style={{ animationDelay: '210ms' } as CSSVars}
         >
-          {person.intro}
+          {INTRO_HEAD}
+          {/* Weight and accent, not a font swap: the reel sits mid-sentence, and
+              swapping families halfway through a line reads as a mistake. */}
+          <AnimatedTextRoller roles={person.roles} className="font-semibold text-primary" />
+          {INTRO_TAIL}
         </p>
 
-        <div className="rise mt-14 md:mt-20" style={{ animationDelay: '280ms' } as CSSVars}>
+        <div className="rise mt-14 md:mt-20" style={{ animationDelay: '350ms' } as CSSVars}>
           <SchemaDiagram roll={roll} />
         </div>
       </div>

@@ -90,12 +90,35 @@ export const person = {
   // PLACEHOLDER
   name: 'JOHN TESTON',
   role: 'Systems & Software Engineer',
+  /*
+    The hero cycles these in place, inside the intro sentence below -- one per
+    discipline rather than one per job title, so the set stays true as the
+    experience list changes. It is deliberately NOT derived from `experience`,
+    because that would rotate seven titles at a seven second cadence and the
+    hero would never come to rest.
+
+    These are DISCIPLINES, not job titles, and the intro supplies the noun
+    ('... {roles} engineer ...'). Keeping them to one word each is what makes the
+    reel work inside a sentence: the window is as wide as the longest string, so
+    near-equal lengths mean near-equal slots and the prose around the reel never
+    re-wraps as it turns. 'Systems & Software Engineer' here instead would leave
+    ~90px of slack inside every shorter frame, and the reel would shove the rest
+    of the sentence around once a lap.
+
+    CONSTRAINT: the reel is nowrap, so the longest string must fit the column the
+    sentence leaves it on the narrowest phone. These measure 78px in body copy at
+    320px. A longer role clips rather than wrapping -- shorten it rather than
+    widening it.
+  */
+  roles: ['Software', 'Network', 'Systems'] as const,
   tagline: 'To Infinity and Beyond. Reach the stars with code that scales.',
   status: 'open_to_work',
   // PLACEHOLDER. Single address only, no time or weather strip.
   location: 'Providenciales, Turks & Caicos Islands',
+  // `{roles}` is not literal copy: Hero splits the sentence on it and drops the
+  // reel from animated-text-04 into that slot, so the roles stay live here.
   intro:
-    'I\'m a tech enthusiast passionate about building, managing, and improving reliable digital solutions. In my professional role, I am responsible for managing IT infrastructure, networks, servers, systems, and the technologies that keep organizations running smoothly.',
+    'I\'m a {roles} engineer passionate about building, managing, and improving reliable digital solutions. In my professional role, I am responsible for managing IT infrastructure, networks, servers, systems, and the technologies that keep organizations running smoothly.',
   // PLACEHOLDER
   links: {
     github: 'https://github.com/Jerzzy16',
