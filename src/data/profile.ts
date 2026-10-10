@@ -258,13 +258,13 @@ export const schemaRelations: readonly SchemaRelation[] = [
 export const projects: readonly Project[] = [
   {
     // PLACEHOLDER
-    title: 'Settlement Replatform',
+    title: 'PortionQ',
     blurb:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. A migration of the core ledger to an event-sourced service, cutting batch settlement from hours to minutes.',
-    stack: ['Java', 'Spring Boot', 'PostgreSQL', 'Kafka'],
-    status: 'shipped',
-    year: '2025',
-    href: '#',
+      'I built PortionQ because tracking what I eat felt slower and more annoying than it needed to be. So I made a calorie and macro tracker that gets out of your way. Search a huge food database, log a meal in seconds, and see where your day stands at a glance. Set goals that fit you, not a one-size-fits-all number.',
+    stack: ['React Native', 'Expo', 'TypeScript', 'PostgreSQL', 'Cloudflare Workers'],
+    status: 'in_progress',
+    year: '2026',
+    href: 'https://portionq.com',
     image: 'https://picsum.photos/seed/ledger-service-dark/1200/800',
     imageWidth: 1200,
     imageHeight: 800,
@@ -272,12 +272,12 @@ export const projects: readonly Project[] = [
   },
   {
     // PLACEHOLDER
-    title: 'Internal Tooling CLI',
+    title: 'Car Reservation System',
     blurb:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. A command line suite that provisions environments and scaffolds services.',
-    stack: ['Go', 'Docker'],
+      'Simple car reservation system for a small fleet of vehicles. Users can view available cars, make reservations, and manage their bookings. Admins can add new vehicles, approve or reject reservations, and view usage statistics.',
+    stack: ['React', 'TypeScript', 'PostgreSQL'],
     status: 'shipped',
-    year: '2024',
+    year: '2026',
     href: '#',
     image: 'https://picsum.photos/seed/terminal-tooling-dark/800/800',
     imageWidth: 800,
@@ -286,10 +286,10 @@ export const projects: readonly Project[] = [
   },
   {
     // PLACEHOLDER
-    title: 'Cargo Tracking Dashboard',
+    title: 'Inventory Management System',
     blurb:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Live shipment telemetry with predictive arrival windows.',
-    stack: ['TypeScript', 'React', 'Redis'],
+      'Logistics, Supply Chain, and Inventory Management System for a small business. Users can track inventory levels, manage suppliers, and generate reports. Admins can set reorder points, manage product categories, and view analytics on inventory turnover.',
+    stack: ['Laravel', 'PHP', 'MySQL'],
     status: 'shipped',
     year: '2024',
     href: '#',
@@ -300,26 +300,12 @@ export const projects: readonly Project[] = [
   },
   {
     // PLACEHOLDER
-    title: 'Warden',
+    title: 'Tetris',
     blurb:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. A tactical roguelite built in Godot with a data-driven ability system.',
+      'Tetris GoDot clone. The game is built in Godot and uses GDScript for scripting.',
     stack: ['Godot', 'GDScript'],
-    status: 'in_progress',
-    year: '2023',
-    href: '#',
-    image: 'https://picsum.photos/seed/indie-game-cave-dark/800/800',
-    imageWidth: 800,
-    imageHeight: 800,
-    span: 'third',
-  },
-  {
-    // PLACEHOLDER
-    title: 'Tidal',
-    blurb:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. An underwater exploration prototype with a custom buoyancy model in Unity.',
-    stack: ['Unity', 'C#'],
     status: 'prototype',
-    year: '2022',
+    year: '2023',
     href: '#',
     image: 'https://picsum.photos/seed/underwater-unity-dark/800/600',
     imageWidth: 800,
@@ -349,6 +335,10 @@ export const skillGroups: readonly SkillGroup[] = [
       { name: 'Spring Boot', icon: 'spring' },
       { name: 'React', icon: 'react' },
       { name: 'Tailwind CSS', icon: 'tailwindcss' },
+      { name: 'Laravel', icon: 'laravel' },
+      { name: 'Express', icon: 'express' },
+      { name: 'Node.js', icon: 'nodedotjs' },
+      { name: 'Expo', icon: 'expo' },
     ],
   },
   {
@@ -359,6 +349,8 @@ export const skillGroups: readonly SkillGroup[] = [
       { name: 'Redis', icon: 'redis' },
       { name: 'Git', icon: 'git' },
       { name: 'Linux', icon: 'linux' },
+      { name: 'AWS', icon: 'amazonaws' },
+      { name: 'Cloudflare', icon: 'cloudflare'},
     ],
   },
   {

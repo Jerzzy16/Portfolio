@@ -1,7 +1,7 @@
-import { getActiveAccent } from '@/lib/palette';
-import { queries, skillGroups } from '@/data/profile';
 import Reveal from '@/components/Reveal';
 import SectionHeader from '@/components/SectionHeader';
+import { queries, skillGroups } from '@/data/profile';
+import { getActiveAccent } from '@/lib/palette';
 
 /**
  * Clustered skill tiles. Brand marks from the Simple Icons CDN, tinted to the
@@ -21,7 +21,6 @@ export default function Skills() {
           <SectionHeader
             title="Skills"
             query={queries.skills}
-            note="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla facilisi, sed do eiusmod tempor incididunt."
           />
         </Reveal>
 

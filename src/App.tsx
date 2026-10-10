@@ -25,10 +25,10 @@ export default function App() {
       <Header />
       <main id="main" className="relative z-10">
         <Hero />
+        <Experience />
         <Projects />
         <Skills />
         <Education />
-        <Experience />
         <Contact />
       </main>
       <Footer />
