@@ -53,7 +53,7 @@ export default function Projects() {
           <SectionHeader
             title="Projects"
             query={queries.projects}
-            note="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+            note="Some of my personal and professional work, past and present. Click a project to learn more."
           />
         </Reveal>
 
